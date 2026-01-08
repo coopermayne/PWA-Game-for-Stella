@@ -21,6 +21,9 @@ let rallies = 0;
 let tiltX = 0;
 const TILT_SENSITIVITY = 3;
 
+// Touch control
+let touchTargetX = null;
+
 // Difficulty settings per level
 function getDifficultySettings(level) {
     return {
@@ -57,15 +60,20 @@ function initGameObjects() {
     resetBall();
 }
 
-function resetBall() {
+function resetBall(serveToPlayer = true) {
     const settings = getDifficultySettings(level);
+
+    // Ball spawns from the side that just lost (serves toward the scorer)
+    // serveToPlayer = true means ball comes from opponent's side toward player
+    const spawnY = serveToPlayer ? canvas.height * 0.2 : canvas.height * 0.8;
+    const directionY = serveToPlayer ? 1 : -1;
 
     ball = {
         size: 8,
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-        speedX: (Math.random() > 0.5 ? 1 : -1) * settings.ballSpeed * 0.5,
-        speedY: settings.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
+        x: canvas.width / 2 + (Math.random() - 0.5) * canvas.width * 0.4,
+        y: spawnY,
+        speedX: (Math.random() > 0.5 ? 1 : -1) * settings.ballSpeed * 0.3,
+        speedY: settings.ballSpeed * directionY,
         baseSpeed: settings.ballSpeed
     };
 }
@@ -110,7 +118,7 @@ async function requestOrientationPermission() {
     }
 }
 
-// Touch fallback for devices without tilt
+// Touch fallback for devices without tilt (sets tiltX)
 function setupTouchFallback() {
     canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
@@ -119,6 +127,23 @@ function setupTouchFallback() {
         const touchX = touch.clientX - rect.left;
         // Convert touch position to tilt-like value
         tiltX = ((touchX / canvas.width) - 0.5) * 60;
+    });
+}
+
+// Direct touch controls (works alongside tilt)
+function setupTouchControls() {
+    function handleTouch(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        // Set target X position directly (paddle center should go here)
+        touchTargetX = touch.clientX - rect.left;
+    }
+
+    canvas.addEventListener('touchstart', handleTouch);
+    canvas.addEventListener('touchmove', handleTouch);
+    canvas.addEventListener('touchend', () => {
+        touchTargetX = null; // Clear touch target when finger lifts
     });
 }
 
@@ -146,9 +171,16 @@ function releaseWakeLock() {
 function update() {
     const settings = getDifficultySettings(level);
 
-    // Update player position based on tilt
-    const targetX = player.x + (tiltX * TILT_SENSITIVITY);
-    player.x += (targetX - player.x) * 0.3;
+    // Update player position based on touch (priority) or tilt
+    if (touchTargetX !== null) {
+        // Touch control: move paddle center toward touch position
+        const targetX = touchTargetX - player.width / 2;
+        player.x += (targetX - player.x) * 0.25;
+    } else {
+        // Tilt control
+        const targetX = player.x + (tiltX * TILT_SENSITIVITY);
+        player.x += (targetX - player.x) * 0.3;
+    }
 
     // Keep player in bounds
     player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
@@ -232,15 +264,14 @@ function update() {
 
     // Scoring
     if (ball.y < 0) {
-        // Player scores
+        // Player scores - ball spawns from opponent side, comes toward player
         playerScore++;
         updateScoreDisplay();
-        resetBall();
-        ball.speedY = Math.abs(ball.speedY);
+        resetBall(true);
     }
 
     if (ball.y > canvas.height) {
-        // Opponent scores
+        // Opponent scores - ball spawns from player side, goes toward opponent
         opponentScore++;
         updateScoreDisplay();
 
@@ -249,8 +280,7 @@ function update() {
             return;
         }
 
-        resetBall();
-        ball.speedY = -Math.abs(ball.speedY);
+        resetBall(false);
     }
 }
 
@@ -348,6 +378,9 @@ async function startGame() {
     // Request orientation permission and wake lock
     await requestOrientationPermission();
     await requestWakeLock();
+
+    // Setup touch controls (works alongside tilt)
+    setupTouchControls();
 
     // Initialize game
     playerScore = 0;
