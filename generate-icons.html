@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Pong Icons</title>
+    <style>
+        body { font-family: monospace; background: #222; color: #33ff33; padding: 20px; }
+        button { background: #000; color: #33ff33; border: 2px solid #33ff33; padding: 10px 20px; cursor: pointer; margin: 10px; }
+        button:hover { background: #33ff33; color: #000; }
+        .preview { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .preview img { border: 1px solid #33ff33; }
+        .preview div { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>PONG Icon Generator</h1>
+    <p>Click the button below to generate and download all PWA icons.</p>
+    <button id="generate">Generate & Download All Icons</button>
+    <div class="preview" id="preview"></div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+
+        function createIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, size, size);
+
+            // Border
+            ctx.strokeStyle = '#33ff33';
+            ctx.lineWidth = Math.max(2, size / 32);
+            ctx.strokeRect(ctx.lineWidth/2, ctx.lineWidth/2, size - ctx.lineWidth, size - ctx.lineWidth);
+
+            // Draw PONG elements
+            const unit = size / 16;
+
+            ctx.fillStyle = '#33ff33';
+
+            // Top paddle
+            ctx.fillRect(size * 0.3, unit * 2, size * 0.4, unit);
+
+            // Bottom paddle
+            ctx.fillRect(size * 0.3, size - unit * 3, size * 0.4, unit);
+
+            // Ball
+            const ballSize = unit * 1.5;
+            ctx.fillRect(size/2 - ballSize/2, size/2 - ballSize/2, ballSize, ballSize);
+
+            // Center line (dashed)
+            ctx.setLineDash([unit/2, unit/2]);
+            ctx.beginPath();
+            ctx.moveTo(unit * 2, size/2);
+            ctx.lineTo(size - unit * 2, size/2);
+            ctx.stroke();
+
+            return canvas;
+        }
+
+        function downloadIcon(canvas, size) {
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        document.getElementById('generate').addEventListener('click', () => {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+
+            sizes.forEach((size, index) => {
+                setTimeout(() => {
+                    const canvas = createIcon(size);
+                    downloadIcon(canvas, size);
+
+                    const div = document.createElement('div');
+                    div.innerHTML = `<img src="${canvas.toDataURL()}" width="${Math.min(size, 128)}"><br>${size}x${size}`;
+                    preview.appendChild(div);
+                }, index * 200);
+            });
+        });
+
+        // Show previews on load
+        window.onload = () => {
+            const preview = document.getElementById('preview');
+            sizes.forEach(size => {
+                const canvas = createIcon(size);
+                const div = document.createElement('div');
+                div.innerHTML = `<img src="${canvas.toDataURL()}" width="${Math.min(size, 128)}"><br>${size}x${size}`;
+                preview.appendChild(div);
+            });
+        };
+    </script>
+</body>
+</html>

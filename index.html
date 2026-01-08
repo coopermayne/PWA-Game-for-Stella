@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Classic Pong Game - Tilt to Play">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Pong">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+    <title>PONG</title>
+</head>
+<body>
+    <div id="game-container">
+        <div id="start-screen">
+            <pre id="title">
+ ____   ___  _   _  ____
+|  _ \ / _ \| \ | |/ ___|
+| |_) | | | |  \| | |  _
+|  __/| |_| | |\  | |_| |
+|_|    \___/|_| \_|\____|
+            </pre>
+            <p id="instructions">TILT PHONE TO MOVE PADDLE</p>
+            <button id="start-btn">[ START GAME ]</button>
+            <p id="permission-note"></p>
+        </div>
+        <div id="game-screen" class="hidden">
+            <div id="score-display">
+                <span id="opponent-score">0</span>
+                <span id="divider">-</span>
+                <span id="player-score">0</span>
+            </div>
+            <canvas id="game-canvas"></canvas>
+            <div id="level-display">LEVEL: <span id="level">1</span></div>
+        </div>
+        <div id="game-over-screen" class="hidden">
+            <p id="game-over-text">GAME OVER</p>
+            <p id="final-score"></p>
+            <button id="restart-btn">[ PLAY AGAIN ]</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
