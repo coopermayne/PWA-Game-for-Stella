@@ -6,6 +6,7 @@ const DOS_BLACK = '#000000';
 let canvas, ctx;
 let gameRunning = false;
 let animationId;
+let wakeLock = null;
 
 // Game objects
 let player, opponent, ball;
@@ -119,6 +120,26 @@ function setupTouchFallback() {
         // Convert touch position to tilt-like value
         tiltX = ((touchX / canvas.width) - 0.5) * 60;
     });
+}
+
+// Screen Wake Lock to prevent screen from sleeping
+async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake lock acquired');
+        } catch (err) {
+            console.log('Wake lock failed:', err.message);
+        }
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+        console.log('Wake lock released');
+    }
 }
 
 // Update game state
@@ -300,6 +321,7 @@ function updateScoreDisplay() {
 function gameOver() {
     gameRunning = false;
     cancelAnimationFrame(animationId);
+    releaseWakeLock();
 
     document.getElementById('game-screen').classList.add('hidden');
     document.getElementById('game-over-screen').classList.remove('hidden');
@@ -323,8 +345,9 @@ async function startGame() {
     canvas.width = Math.min(maxWidth, 350);
     canvas.height = Math.min(maxHeight, 500);
 
-    // Request orientation permission
+    // Request orientation permission and wake lock
     await requestOrientationPermission();
+    await requestWakeLock();
 
     // Initialize game
     playerScore = 0;
@@ -342,9 +365,12 @@ async function startGame() {
 }
 
 // Restart game
-function restartGame() {
+async function restartGame() {
     document.getElementById('game-over-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
+
+    // Re-acquire wake lock
+    await requestWakeLock();
 
     playerScore = 0;
     opponentScore = 0;
@@ -368,10 +394,12 @@ document.getElementById('restart-btn').addEventListener('click', restartGame);
 document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
 // Handle visibility change (pause when tab hidden)
-document.addEventListener('visibilitychange', () => {
+document.addEventListener('visibilitychange', async () => {
     if (document.hidden && gameRunning) {
         cancelAnimationFrame(animationId);
     } else if (!document.hidden && gameRunning) {
+        // Re-acquire wake lock when returning to game
+        await requestWakeLock();
         gameLoop();
     }
 });
