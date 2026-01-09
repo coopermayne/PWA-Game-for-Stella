@@ -81,43 +81,82 @@ function initAudio() {
 function playCorrectSound() {
     if (!audioContext) return;
 
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+    // Sparkly chime sound - multiple high frequencies for magic feel
+    const notes = [1200, 1500, 1800, 2200];
 
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    notes.forEach((freq, i) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
 
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-    oscillator.frequency.setValueAtTime(1100, audioContext.currentTime + 0.05);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
 
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.15);
+        oscillator.type = 'sine';
+        const startTime = audioContext.currentTime + i * 0.03;
+        oscillator.frequency.setValueAtTime(freq, startTime);
 
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.15);
+        gainNode.gain.setValueAtTime(0.15, startTime);
+        gainNode.gain.exponentialDecayTo(0.01, startTime + 0.2);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.2);
+    });
+
+    // Add a nice bell tone
+    const bell = audioContext.createOscillator();
+    const bellGain = audioContext.createGain();
+    bell.connect(bellGain);
+    bellGain.connect(audioContext.destination);
+    bell.type = 'triangle';
+    bell.frequency.setValueAtTime(1047, audioContext.currentTime); // C6
+    bellGain.gain.setValueAtTime(0.25, audioContext.currentTime);
+    bellGain.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.3);
+    bell.start(audioContext.currentTime);
+    bell.stop(audioContext.currentTime + 0.3);
 }
 
 function playWrongSound() {
     if (!audioContext) return;
 
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+    // Dramatic buzzer/boom sound
+    // Low rumble
+    const rumble = audioContext.createOscillator();
+    const rumbleGain = audioContext.createGain();
+    rumble.connect(rumbleGain);
+    rumbleGain.connect(audioContext.destination);
+    rumble.type = 'sawtooth';
+    rumble.frequency.setValueAtTime(80, audioContext.currentTime);
+    rumble.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + 0.4);
+    rumbleGain.gain.setValueAtTime(0.3, audioContext.currentTime);
+    rumbleGain.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.5);
+    rumble.start(audioContext.currentTime);
+    rumble.stop(audioContext.currentTime + 0.5);
 
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    // Buzzer tone
+    const buzzer = audioContext.createOscillator();
+    const buzzerGain = audioContext.createGain();
+    buzzer.connect(buzzerGain);
+    buzzerGain.connect(audioContext.destination);
+    buzzer.type = 'square';
+    buzzer.frequency.setValueAtTime(150, audioContext.currentTime);
+    buzzer.frequency.setValueAtTime(120, audioContext.currentTime + 0.1);
+    buzzerGain.gain.setValueAtTime(0.15, audioContext.currentTime);
+    buzzerGain.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.3);
+    buzzer.start(audioContext.currentTime);
+    buzzer.stop(audioContext.currentTime + 0.3);
 
-    oscillator.type = 'sine';
-    // Playful boing sound - descending frequency
-    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.15);
-    oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.25);
-
-    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-    gainNode.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.3);
-
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
+    // Impact thud
+    const thud = audioContext.createOscillator();
+    const thudGain = audioContext.createGain();
+    thud.connect(thudGain);
+    thudGain.connect(audioContext.destination);
+    thud.type = 'sine';
+    thud.frequency.setValueAtTime(60, audioContext.currentTime);
+    thud.frequency.exponentialRampToValueAtTime(30, audioContext.currentTime + 0.15);
+    thudGain.gain.setValueAtTime(0.4, audioContext.currentTime);
+    thudGain.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.2);
+    thud.start(audioContext.currentTime);
+    thud.stop(audioContext.currentTime + 0.2);
 }
 
 function playWordCompleteSound() {
@@ -161,6 +200,85 @@ function playPickupSound() {
 
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.08);
+}
+
+// ==================== VISUAL EFFECTS ====================
+function createConfettiBurst(element) {
+    console.log('createConfettiBurst called, confetti available:', typeof confetti !== 'undefined');
+    if (typeof confetti === 'undefined') {
+        console.log('Confetti library not loaded!');
+        return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const centerX = (rect.left + rect.width / 2) / window.innerWidth;
+    const centerY = (rect.top + rect.height / 2) / window.innerHeight;
+
+    // Burst of confetti from the letter slot!
+    confetti({
+        particleCount: 50,
+        spread: 80,
+        origin: { x: centerX, y: centerY },
+        colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F7DC6F', '#BB8FCE', '#85C1E9', '#FFD700'],
+        startVelocity: 30,
+        gravity: 0.8,
+        scalar: 1.2,
+        ticks: 100
+    });
+
+    // Extra sparkle burst
+    confetti({
+        particleCount: 20,
+        spread: 360,
+        origin: { x: centerX, y: centerY },
+        colors: ['#FFD700', '#FFA500', '#FFFF00'],
+        startVelocity: 20,
+        gravity: 0.5,
+        scalar: 0.8,
+        shapes: ['circle'],
+        ticks: 80
+    });
+}
+
+function triggerScreenShake() {
+    const gameScreen = document.getElementById('game-screen');
+    gameScreen.classList.add('screen-shake');
+
+    // Vibrate if supported
+    if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 100, 50, 150]);
+    }
+
+    setTimeout(() => {
+        gameScreen.classList.remove('screen-shake');
+    }, 500);
+}
+
+function triggerScreenDarken() {
+    let overlay = document.getElementById('wrong-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'wrong-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 0%, rgba(139, 0, 0, 0.6) 100%);
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    // Flash the overlay
+    overlay.style.opacity = '1';
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+    }, 300);
 }
 
 // ==================== BUBBLE PHYSICS ====================
@@ -558,8 +676,9 @@ function checkLetter(letter, expectedLetter, bubble) {
             slots[gameState.nextSlotIndex].classList.add('next');
         }
 
-        // Play sound (wrapped in try-catch so errors don't break game)
+        // Play sound and trigger confetti burst!
         try { playCorrectSound(); } catch (e) { console.log('Sound error:', e); }
+        try { createConfettiBurst(currentSlot); } catch (e) { console.log('Confetti error:', e); }
 
         // Check if word complete
         if (gameState.nextSlotIndex >= gameState.currentWord.word.length) {
@@ -568,11 +687,14 @@ function checkLetter(letter, expectedLetter, bubble) {
             gameState.isProcessing = false;
         }
     } else {
-        // Wrong! Update UI first, then play sound
+        // Wrong! Trigger dramatic effects!
         currentSlot.textContent = letter;
         currentSlot.classList.add('wrong');
 
+        // Play dramatic wrong sound and visual effects
         try { playWrongSound(); } catch (e) { console.log('Sound error:', e); }
+        try { triggerScreenShake(); } catch (e) { console.log('Shake error:', e); }
+        try { triggerScreenDarken(); } catch (e) { console.log('Darken error:', e); }
 
         // Wobble and return
         setTimeout(() => {
