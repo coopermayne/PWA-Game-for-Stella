@@ -3,43 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#000000">
-    <meta name="description" content="Classic Pong Game - Tilt to Play">
+    <meta name="theme-color" content="#E8F5E9">
+    <meta name="description" content="Word Sluice - A fun spelling game for kids">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Pong">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Word Sluice">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="stylesheet" href="styles.css">
-    <title>PONG</title>
+    <title>Word Sluice</title>
 </head>
 <body>
-    <div id="game-container">
-        <div id="start-screen">
-            <pre id="title">
- ____   ___  _   _  ____
-|  _ \ / _ \| \ | |/ ___|
-| |_) | | | |  \| | |  _
-|  __/| |_| | |\  | |_| |
-|_|    \___/|_| \_|\____|
-            </pre>
-            <p id="instructions">TILT PHONE TO MOVE PADDLE</p>
-            <button id="start-btn">[ START GAME ]</button>
-            <p id="permission-note"></p>
-        </div>
-        <div id="game-screen" class="hidden">
-            <div id="score-display">
-                <span id="opponent-score">0</span>
-                <span id="divider">-</span>
-                <span id="player-score">0</span>
+    <div id="app">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen">
+            <div class="title-container">
+                <h1 class="game-title">Word Sluice</h1>
+                <p class="subtitle">Spell the words!</p>
             </div>
-            <canvas id="game-canvas"></canvas>
-            <div id="level-display">LEVEL: <span id="level">1</span></div>
+            <div class="difficulty-selector">
+                <p class="difficulty-label">Choose Difficulty:</p>
+                <button class="difficulty-btn selected" data-difficulty="easy">Easy</button>
+                <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+            </div>
+            <button id="start-btn" class="big-button">Let's Play!</button>
         </div>
-        <div id="game-over-screen" class="hidden">
-            <p id="game-over-text">GAME OVER</p>
-            <p id="final-score"></p>
-            <button id="restart-btn">[ PLAY AGAIN ]</button>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen hidden">
+            <!-- Progress Bar -->
+            <div id="progress-bar">
+                <div id="progress-fill"></div>
+                <span id="progress-text">1 / 10</span>
+            </div>
+
+            <!-- Image Zone -->
+            <div id="image-zone">
+                <div id="word-image">
+                    <span id="word-hint"></span>
+                </div>
+            </div>
+
+            <!-- Bouncy Zone -->
+            <div id="bouncy-zone">
+                <canvas id="bubble-canvas"></canvas>
+            </div>
+
+            <!-- Drop Zone -->
+            <div id="drop-zone">
+                <div id="letter-slots"></div>
+            </div>
+        </div>
+
+        <!-- Celebration Overlay -->
+        <div id="celebration-overlay" class="hidden">
+            <div class="celebration-content">
+                <div class="stars"></div>
+                <h2 class="celebration-text">Great Job!</h2>
+            </div>
+        </div>
+
+        <!-- Level Complete Screen -->
+        <div id="level-complete-screen" class="screen hidden">
+            <div class="complete-content">
+                <h1 class="complete-title">Amazing!</h1>
+                <p class="complete-subtitle">You finished all the words!</p>
+                <div class="stars-display">
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                </div>
+                <button id="play-again-btn" class="big-button">Play Again!</button>
+            </div>
         </div>
     </div>
     <script src="game.js"></script>

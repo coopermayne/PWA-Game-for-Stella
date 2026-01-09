@@ -1,7 +1,7 @@
 {
-  "name": "pong-pwa",
+  "name": "word-sluice",
   "version": "1.0.0",
-  "description": "Classic Pong PWA with tilt controls",
+  "description": "Word Sluice - A fun spelling game for kids",
   "scripts": {
     "start": "npx serve .",
     "dev": "npx serve . -l 3000"

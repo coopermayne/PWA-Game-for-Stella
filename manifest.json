@@ -1,12 +1,12 @@
 {
-  "name": "PONG - Tilt to Play",
-  "short_name": "PONG",
-  "description": "Classic Pong game with tilt controls",
+  "name": "Word Sluice - Spelling Game",
+  "short_name": "Word Sluice",
+  "description": "A fun spelling game for kids - tap letters to spell words!",
   "start_url": "/",
   "display": "fullscreen",
   "orientation": "portrait",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#E8F5E9",
+  "theme_color": "#66BB6A",
   "icons": [
     {
       "src": "icons/icon-72.png",

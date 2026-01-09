@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-// Pure JavaScript PNG generation for Pong icons
+// Pure JavaScript PNG generation for Word Sluice icons
 function createPNG(size) {
     const width = size;
     const height = size;
@@ -10,20 +10,20 @@ function createPNG(size) {
     // Create raw pixel data (RGBA)
     const pixels = Buffer.alloc(width * height * 4);
 
-    const bgColor = [0, 0, 0, 255];       // Black
-    const fgColor = [51, 255, 51, 255];   // DOS Green #33ff33
-
-    // Fill background
-    for (let i = 0; i < width * height; i++) {
-        pixels[i * 4] = bgColor[0];
-        pixels[i * 4 + 1] = bgColor[1];
-        pixels[i * 4 + 2] = bgColor[2];
-        pixels[i * 4 + 3] = bgColor[3];
-    }
+    // Colors
+    const bgGreen1 = [129, 199, 132, 255];    // #81C784
+    const bgGreen2 = [76, 175, 80, 255];      // #4CAF50
+    const white = [255, 255, 255, 255];
+    const textColor = [55, 71, 79, 255];      // #37474F
+    const bubbleColors = [
+        [255, 138, 128, 255],  // #FF8A80 (red)
+        [130, 177, 255, 255],  // #82B1FF (blue)
+        [255, 209, 128, 255]   // #FFD180 (orange)
+    ];
 
     function setPixel(x, y, color) {
         if (x >= 0 && x < width && y >= 0 && y < height) {
-            const idx = (y * width + x) * 4;
+            const idx = (Math.floor(y) * width + Math.floor(x)) * 4;
             pixels[idx] = color[0];
             pixels[idx + 1] = color[1];
             pixels[idx + 2] = color[2];
@@ -31,41 +31,120 @@ function createPNG(size) {
         }
     }
 
-    function fillRect(x, y, w, h, color) {
-        for (let py = y; py < y + h; py++) {
-            for (let px = x; px < x + w; px++) {
-                setPixel(Math.floor(px), Math.floor(py), color);
+    function blendColors(c1, c2, t) {
+        return [
+            Math.round(c1[0] + (c2[0] - c1[0]) * t),
+            Math.round(c1[1] + (c2[1] - c1[1]) * t),
+            Math.round(c1[2] + (c2[2] - c1[2]) * t),
+            255
+        ];
+    }
+
+    function fillCircle(cx, cy, r, color) {
+        for (let y = cy - r; y <= cy + r; y++) {
+            for (let x = cx - r; x <= cx + r; x++) {
+                const dx = x - cx;
+                const dy = y - cy;
+                if (dx * dx + dy * dy <= r * r) {
+                    setPixel(x, y, color);
+                }
             }
         }
     }
 
-    const unit = size / 16;
-    const borderWidth = Math.max(2, Math.floor(size / 32));
+    function drawBubble(cx, cy, r, baseColor) {
+        // Shadow
+        fillCircle(cx + 2, cy + 2, r, [0, 0, 0, 40]);
 
-    // Draw border
-    fillRect(0, 0, width, borderWidth, fgColor);  // Top
-    fillRect(0, height - borderWidth, width, borderWidth, fgColor);  // Bottom
-    fillRect(0, 0, borderWidth, height, fgColor);  // Left
-    fillRect(width - borderWidth, 0, borderWidth, height, fgColor);  // Right
+        // Main bubble with gradient-like effect
+        for (let y = cy - r; y <= cy + r; y++) {
+            for (let x = cx - r; x <= cx + r; x++) {
+                const dx = x - cx;
+                const dy = y - cy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist <= r) {
+                    // Simple radial gradient from white center to color
+                    const t = Math.min(1, dist / r * 1.5);
+                    const color = blendColors(white, baseColor, t);
+                    setPixel(x, y, color);
+                }
+            }
+        }
 
-    // Top paddle
-    const paddleWidth = size * 0.4;
-    const paddleHeight = unit;
-    const paddleX = size * 0.3;
-    fillRect(paddleX, unit * 2, paddleWidth, paddleHeight, fgColor);
-
-    // Bottom paddle
-    fillRect(paddleX, size - unit * 3, paddleWidth, paddleHeight, fgColor);
-
-    // Ball (center)
-    const ballSize = unit * 1.5;
-    fillRect(size / 2 - ballSize / 2, size / 2 - ballSize / 2, ballSize, ballSize, fgColor);
-
-    // Center dashed line
-    const dashLen = Math.max(2, Math.floor(unit / 2));
-    for (let x = unit * 2; x < size - unit * 2; x += dashLen * 2) {
-        fillRect(x, size / 2 - 1, dashLen, 2, fgColor);
+        // Highlight
+        const hlX = cx - r * 0.35;
+        const hlY = cy - r * 0.35;
+        const hlR = r * 0.25;
+        fillCircle(hlX, hlY, hlR, [255, 255, 255, 180]);
     }
+
+    // Fill background with gradient
+    for (let y = 0; y < height; y++) {
+        const t = y / height;
+        const color = blendColors(bgGreen1, bgGreen2, t);
+        for (let x = 0; x < width; x++) {
+            setPixel(x, y, color);
+        }
+    }
+
+    // Draw letter bubbles
+    const bubbleRadius = Math.floor(size * 0.18);
+    const positions = [
+        { x: size * 0.5, y: size * 0.28 },   // Top center
+        { x: size * 0.3, y: size * 0.58 },   // Bottom left
+        { x: size * 0.7, y: size * 0.58 }    // Bottom right
+    ];
+
+    positions.forEach((pos, i) => {
+        drawBubble(Math.floor(pos.x), Math.floor(pos.y), bubbleRadius, bubbleColors[i]);
+    });
+
+    // Draw simple letters in center of bubbles (basic pixel font for small sizes)
+    const letters = ['A', 'B', 'C'];
+    const letterPatterns = {
+        'A': [
+            [0,1,1,0],
+            [1,0,0,1],
+            [1,1,1,1],
+            [1,0,0,1],
+            [1,0,0,1]
+        ],
+        'B': [
+            [1,1,1,0],
+            [1,0,0,1],
+            [1,1,1,0],
+            [1,0,0,1],
+            [1,1,1,0]
+        ],
+        'C': [
+            [0,1,1,1],
+            [1,0,0,0],
+            [1,0,0,0],
+            [1,0,0,0],
+            [0,1,1,1]
+        ]
+    };
+
+    positions.forEach((pos, i) => {
+        const pattern = letterPatterns[letters[i]];
+        const pixelSize = Math.max(1, Math.floor(bubbleRadius / 4));
+        const letterWidth = 4 * pixelSize;
+        const letterHeight = 5 * pixelSize;
+        const startX = Math.floor(pos.x - letterWidth / 2);
+        const startY = Math.floor(pos.y - letterHeight / 2);
+
+        for (let py = 0; py < 5; py++) {
+            for (let px = 0; px < 4; px++) {
+                if (pattern[py][px]) {
+                    for (let dy = 0; dy < pixelSize; dy++) {
+                        for (let dx = 0; dx < pixelSize; dx++) {
+                            setPixel(startX + px * pixelSize + dx, startY + py * pixelSize + dy, textColor);
+                        }
+                    }
+                }
+            }
+        }
+    });
 
     // Now encode as PNG
     return encodePNG(pixels, width, height);
@@ -163,7 +242,7 @@ if (!fs.existsSync(iconsDir)) {
     fs.mkdirSync(iconsDir, { recursive: true });
 }
 
-console.log('Generating Pong PWA icons...');
+console.log('Generating Word Sluice PWA icons...');
 
 sizes.forEach(size => {
     const pngData = createPNG(size);

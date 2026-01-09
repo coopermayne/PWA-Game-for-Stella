@@ -1,158 +1,759 @@
-// Game constants
-const DOS_GREEN = '#33ff33';
-const DOS_BLACK = '#000000';
+// Word Sluice - Children's Educational Spelling Game
 
-// Game state
+// ==================== WORD LIST ====================
+const WORD_LIST = [
+    // 3-letter words (easy start)
+    { word: 'CAT', color: '#FFB74D' },
+    { word: 'DOG', color: '#81C784' },
+    { word: 'MOM', color: '#F48FB1' },
+    { word: 'DAD', color: '#64B5F6' },
+    { word: 'SUN', color: '#FFD54F' },
+    { word: 'BUS', color: '#FFB74D' },
+    { word: 'HAT', color: '#CE93D8' },
+    { word: 'PIG', color: '#F48FB1' },
+    { word: 'CUP', color: '#4FC3F7' },
+    { word: 'BED', color: '#A5D6A7' },
+    // 4-letter words
+    { word: 'FISH', color: '#4FC3F7' },
+    { word: 'BIRD', color: '#FFD54F' },
+    { word: 'TREE', color: '#81C784' },
+    { word: 'STAR', color: '#FFD54F' },
+    { word: 'BOOK', color: '#FFCC80' },
+    { word: 'FROG', color: '#A5D6A7' },
+    { word: 'DUCK', color: '#FFD54F' },
+    { word: 'CAKE', color: '#F48FB1' },
+    { word: 'BALL', color: '#EF5350' },
+    { word: 'MOON', color: '#B0BEC5' },
+    // 5-letter words
+    { word: 'APPLE', color: '#EF5350' },
+    { word: 'HOUSE', color: '#FFCC80' },
+    { word: 'WATER', color: '#4FC3F7' },
+    { word: 'SMILE', color: '#FFD54F' },
+    { word: 'HAPPY', color: '#FFD54F' },
+    { word: 'CLOUD', color: '#90CAF9' },
+    { word: 'GRASS', color: '#81C784' },
+    { word: 'TRAIN', color: '#EF5350' },
+    { word: 'HORSE', color: '#BCAAA4' },
+    { word: 'PLANT', color: '#81C784' }
+];
+
+const DECOY_LETTERS = 'QWXZJKVYPB';
+
+// ==================== GAME STATE ====================
+let gameState = {
+    difficulty: 'easy',
+    currentWordIndex: 0,
+    currentWord: null,
+    filledSlots: [],
+    nextSlotIndex: 0,
+    wordsCompleted: 0,
+    totalWords: 10,
+    isProcessing: false
+};
+
+let bubbles = [];
 let canvas, ctx;
-let gameRunning = false;
 let animationId;
 let wakeLock = null;
+let audioContext = null;
+let isDragging = false;
+let draggedBubble = null;
+let dragOffset = { x: 0, y: 0 };
 
-// Game objects
-let player, opponent, ball;
-
-// Score and difficulty
-let playerScore = 0;
-let opponentScore = 0;
-let level = 1;
-let rallies = 0;
-
-// Tilt control
-let tiltX = 0;
-const TILT_SENSITIVITY = 3;
-
-// Touch control
-let touchTargetX = null;
-
-// Difficulty settings per level
-function getDifficultySettings(level) {
-    return {
-        ballSpeed: 3 + (level * 0.5),
-        opponentSpeed: 2 + (level * 0.3),
-        opponentReactionDelay: Math.max(0.3, 1 - (level * 0.1)),
-        opponentAccuracy: Math.min(0.95, 0.6 + (level * 0.05))
-    };
-}
-
-// Initialize game objects
-function initGameObjects() {
-    const settings = getDifficultySettings(level);
-
-    player = {
-        width: canvas.width * 0.25,
-        height: 10,
-        x: canvas.width / 2 - (canvas.width * 0.25) / 2,
-        y: canvas.height - 30,
-        speed: 8
-    };
-
-    opponent = {
-        width: canvas.width * 0.25,
-        height: 10,
-        x: canvas.width / 2 - (canvas.width * 0.25) / 2,
-        y: 20,
-        speed: settings.opponentSpeed,
-        targetX: canvas.width / 2,
-        reactionTimer: 0,
-        reactionDelay: settings.opponentReactionDelay
-    };
-
-    resetBall();
-}
-
-function resetBall(serveToPlayer = true) {
-    const settings = getDifficultySettings(level);
-
-    // Ball spawns from the side that just lost (serves toward the scorer)
-    // serveToPlayer = true means ball comes from opponent's side toward player
-    const spawnY = serveToPlayer ? canvas.height * 0.2 : canvas.height * 0.8;
-    const directionY = serveToPlayer ? 1 : -1;
-
-    ball = {
-        size: 8,
-        x: canvas.width / 2 + (Math.random() - 0.5) * canvas.width * 0.4,
-        y: spawnY,
-        speedX: (Math.random() > 0.5 ? 1 : -1) * settings.ballSpeed * 0.3,
-        speedY: settings.ballSpeed * directionY,
-        baseSpeed: settings.ballSpeed
-    };
-}
-
-// Device orientation handling
-function handleOrientation(event) {
-    // gamma is left-right tilt in degrees (-90 to 90)
-    if (event.gamma !== null) {
-        tiltX = event.gamma;
+// ==================== SOUND EFFECTS ====================
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
     }
 }
 
-async function requestOrientationPermission() {
-    const permissionNote = document.getElementById('permission-note');
+function playCorrectSound() {
+    if (!audioContext) return;
 
-    // Check if DeviceOrientationEvent exists and requires permission (iOS 13+)
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-        try {
-            const permission = await DeviceOrientationEvent.requestPermission();
-            if (permission === 'granted') {
-                window.addEventListener('deviceorientation', handleOrientation);
-                return true;
-            } else {
-                permissionNote.textContent = 'TILT PERMISSION DENIED - USING TOUCH';
-                setupTouchFallback();
-                return false;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(1100, audioContext.currentTime + 0.05);
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialDecayTo = 0.01;
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.15);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.15);
+}
+
+function playWrongSound() {
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.type = 'sine';
+    // Playful boing sound - descending frequency
+    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.15);
+    oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.25);
+
+    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+    gainNode.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.3);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+}
+
+function playWordCompleteSound() {
+    if (!audioContext) return;
+
+    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6 - happy ascending
+
+    notes.forEach((freq, i) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.1);
+
+        const startTime = audioContext.currentTime + i * 0.1;
+        gainNode.gain.setValueAtTime(0.25, startTime);
+        gainNode.gain.exponentialDecayTo(0.01, startTime + 0.2);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.2);
+    });
+}
+
+function playPickupSound() {
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+
+    gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+    gainNode.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.08);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.08);
+}
+
+// Polyfill for exponentialDecayTo
+if (typeof GainNode !== 'undefined' && !GainNode.prototype.exponentialDecayTo) {
+    AudioParam.prototype.exponentialDecayTo = function(value, endTime) {
+        this.exponentialRampToValueAtTime(Math.max(value, 0.0001), endTime);
+    };
+}
+
+// ==================== BUBBLE PHYSICS ====================
+class Bubble {
+    constructor(letter, x, y, isCorrect = true) {
+        this.letter = letter;
+        this.x = x;
+        this.y = y;
+        this.radius = 35;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.isCorrect = isCorrect;
+        this.color = isCorrect ? this.getLetterColor() : '#B0BEC5';
+        this.isBeingDragged = false;
+        this.isFlying = false;
+        this.flyTarget = null;
+        this.opacity = 1;
+        this.scale = 1;
+    }
+
+    getLetterColor() {
+        const colors = ['#FF8A80', '#FF80AB', '#EA80FC', '#B388FF', '#82B1FF', '#80D8FF', '#84FFFF', '#A7FFEB', '#B9F6CA', '#CCFF90', '#F4FF81', '#FFE57F', '#FFD180', '#FF9E80'];
+        return colors[this.letter.charCodeAt(0) % colors.length];
+    }
+
+    update(canvasWidth, canvasHeight, allBubbles) {
+        if (this.isBeingDragged) return;
+
+        if (this.isFlying && this.flyTarget) {
+            // Fly toward target slot
+            const dx = this.flyTarget.x - this.x;
+            const dy = this.flyTarget.y - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 5) {
+                // Arrived at target
+                this.x = this.flyTarget.x;
+                this.y = this.flyTarget.y;
+                this.isFlying = false;
+                if (this.flyTarget.callback) {
+                    this.flyTarget.callback();
+                }
+                return;
             }
-        } catch (error) {
-            permissionNote.textContent = 'ERROR: ' + error.message;
-            setupTouchFallback();
-            return false;
+
+            const speed = 15;
+            this.x += (dx / dist) * speed;
+            this.y += (dy / dist) * speed;
+            return;
         }
-    } else if ('DeviceOrientationEvent' in window) {
-        // Non-iOS devices don't need permission
-        window.addEventListener('deviceorientation', handleOrientation);
-        return true;
+
+        // Apply velocity
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Add slight randomness for more natural movement
+        this.vx += (Math.random() - 0.5) * 0.1;
+        this.vy += (Math.random() - 0.5) * 0.1;
+
+        // Limit speed
+        const maxSpeed = 2;
+        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        if (speed > maxSpeed) {
+            this.vx = (this.vx / speed) * maxSpeed;
+            this.vy = (this.vy / speed) * maxSpeed;
+        }
+
+        // Bounce off walls
+        if (this.x - this.radius < 0) {
+            this.x = this.radius;
+            this.vx = Math.abs(this.vx) * 0.8;
+        }
+        if (this.x + this.radius > canvasWidth) {
+            this.x = canvasWidth - this.radius;
+            this.vx = -Math.abs(this.vx) * 0.8;
+        }
+        if (this.y - this.radius < 0) {
+            this.y = this.radius;
+            this.vy = Math.abs(this.vy) * 0.8;
+        }
+        if (this.y + this.radius > canvasHeight) {
+            this.y = canvasHeight - this.radius;
+            this.vy = -Math.abs(this.vy) * 0.8;
+        }
+
+        // Collision with other bubbles
+        for (const other of allBubbles) {
+            if (other === this || other.isFlying || other.isBeingDragged) continue;
+
+            const dx = other.x - this.x;
+            const dy = other.y - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = this.radius + other.radius;
+
+            if (dist < minDist && dist > 0) {
+                // Push apart
+                const overlap = minDist - dist;
+                const pushX = (dx / dist) * overlap * 0.5;
+                const pushY = (dy / dist) * overlap * 0.5;
+
+                this.x -= pushX;
+                this.y -= pushY;
+                other.x += pushX;
+                other.y += pushY;
+
+                // Exchange some velocity
+                const tempVx = this.vx;
+                const tempVy = this.vy;
+                this.vx = other.vx * 0.8;
+                this.vy = other.vy * 0.8;
+                other.vx = tempVx * 0.8;
+                other.vy = tempVy * 0.8;
+            }
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+
+        // Draw bubble shadow
+        ctx.beginPath();
+        ctx.arc(3, 3, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.fill();
+
+        // Draw bubble
+        const gradient = ctx.createRadialGradient(-10, -10, 0, 0, 0, this.radius);
+        gradient.addColorStop(0, '#FFFFFF');
+        gradient.addColorStop(0.3, this.color);
+        gradient.addColorStop(1, this.darkenColor(this.color, 20));
+
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        // Draw bubble highlight
+        ctx.beginPath();
+        ctx.arc(-10, -10, this.radius * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.fill();
+
+        // Draw letter
+        ctx.fillStyle = '#37474F';
+        ctx.font = `bold ${this.radius}px 'Comic Sans MS', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.letter, 0, 2);
+
+        ctx.restore();
+    }
+
+    darkenColor(color, amount) {
+        const hex = color.replace('#', '');
+        const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - amount);
+        const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - amount);
+        const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - amount);
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+
+    containsPoint(x, y) {
+        const dx = x - this.x;
+        const dy = y - this.y;
+        return Math.sqrt(dx * dx + dy * dy) <= this.radius;
+    }
+
+    flyTo(x, y, callback) {
+        this.isFlying = true;
+        this.flyTarget = { x, y, callback };
+    }
+}
+
+// ==================== GAME FUNCTIONS ====================
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+function setupWord() {
+    const wordData = gameState.currentWord;
+    const word = wordData.word;
+
+    // Update word hint
+    const wordHint = document.getElementById('word-hint');
+    if (gameState.difficulty === 'hard') {
+        wordHint.classList.add('hidden-hint');
     } else {
-        permissionNote.textContent = 'NO TILT SENSOR - USING TOUCH';
-        setupTouchFallback();
-        return false;
+        wordHint.classList.remove('hidden-hint');
+        wordHint.textContent = word;
     }
+
+    // Update word image background color
+    const wordImage = document.getElementById('word-image');
+    wordImage.style.background = `linear-gradient(135deg, ${wordData.color}40 0%, ${wordData.color}80 100%)`;
+
+    // Create letter slots
+    const slotsContainer = document.getElementById('letter-slots');
+    slotsContainer.innerHTML = '';
+    gameState.filledSlots = [];
+    gameState.nextSlotIndex = 0;
+
+    for (let i = 0; i < word.length; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'letter-slot';
+        slot.dataset.index = i;
+        slot.dataset.letter = word[i];
+        if (i === 0) slot.classList.add('next');
+        slotsContainer.appendChild(slot);
+        gameState.filledSlots.push(null);
+    }
+
+    // Create bubbles
+    createBubbles(word);
+
+    // Update progress
+    updateProgress();
 }
 
-// Touch fallback for devices without tilt (sets tiltX)
-function setupTouchFallback() {
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        const touchX = touch.clientX - rect.left;
-        // Convert touch position to tilt-like value
-        tiltX = ((touchX / canvas.width) - 0.5) * 60;
+function createBubbles(word) {
+    bubbles = [];
+    const letters = word.split('');
+
+    // Add decoy letters based on difficulty
+    let decoyCount = 0;
+    if (gameState.difficulty === 'medium') {
+        decoyCount = Math.min(3, Math.floor(word.length / 2) + 1);
+    } else if (gameState.difficulty === 'hard') {
+        decoyCount = Math.min(5, word.length);
+    }
+
+    // Pick random decoys not in the word
+    const availableDecoys = DECOY_LETTERS.split('').filter(l => !letters.includes(l));
+    const decoys = shuffleArray(availableDecoys).slice(0, decoyCount);
+
+    // Combine and shuffle all letters
+    const allLetters = [...letters.map(l => ({ letter: l, isCorrect: true })),
+                        ...decoys.map(l => ({ letter: l, isCorrect: false }))];
+    const shuffledLetters = shuffleArray(allLetters);
+
+    // Position bubbles randomly in the bouncy zone
+    const padding = 50;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    shuffledLetters.forEach((item, index) => {
+        let x, y, overlapping;
+        let attempts = 0;
+
+        do {
+            x = padding + Math.random() * (canvasWidth - padding * 2);
+            y = padding + Math.random() * (canvasHeight - padding * 2);
+            overlapping = bubbles.some(b => {
+                const dx = b.x - x;
+                const dy = b.y - y;
+                return Math.sqrt(dx * dx + dy * dy) < 80;
+            });
+            attempts++;
+        } while (overlapping && attempts < 50);
+
+        const bubble = new Bubble(item.letter, x, y, item.isCorrect);
+        bubbles.push(bubble);
     });
 }
 
-// Direct touch controls (works alongside tilt)
-function setupTouchControls() {
-    function handleTouch(e) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        // Set target X position directly (paddle center should go here)
-        touchTargetX = touch.clientX - rect.left;
+function updateProgress() {
+    const progress = (gameState.wordsCompleted / gameState.totalWords) * 100;
+    document.getElementById('progress-fill').style.width = `${Math.max(5, progress)}%`;
+    document.getElementById('progress-text').textContent = `${gameState.wordsCompleted + 1} / ${gameState.totalWords}`;
+}
+
+function getSlotPosition(index) {
+    const slots = document.querySelectorAll('.letter-slot');
+    if (index >= slots.length) return null;
+
+    const slot = slots[index];
+    const rect = slot.getBoundingClientRect();
+    const gameScreen = document.getElementById('game-screen');
+    const gameRect = gameScreen.getBoundingClientRect();
+
+    return {
+        x: rect.left - gameRect.left + rect.width / 2,
+        y: rect.top - gameRect.top + rect.height / 2
+    };
+}
+
+function tryPlaceLetter(bubble) {
+    if (gameState.isProcessing) return;
+
+    const word = gameState.currentWord.word;
+    const expectedLetter = word[gameState.nextSlotIndex];
+
+    // Get slot position (relative to game screen)
+    const slotPos = getSlotPosition(gameState.nextSlotIndex);
+    if (!slotPos) return;
+
+    // Convert canvas position to screen position
+    const bouncyZone = document.getElementById('bouncy-zone');
+    const bouncyRect = bouncyZone.getBoundingClientRect();
+    const gameScreen = document.getElementById('game-screen');
+    const gameRect = gameScreen.getBoundingClientRect();
+
+    const bubbleScreenX = bouncyRect.left - gameRect.left + bubble.x;
+    const bubbleScreenY = bouncyRect.top - gameRect.top + bubble.y;
+
+    gameState.isProcessing = true;
+
+    // Animate bubble flying to slot
+    const startX = bubbleScreenX;
+    const startY = bubbleScreenY;
+    const targetX = slotPos.x;
+    const targetY = slotPos.y;
+
+    let progress = 0;
+    const flyDuration = 200;
+    const startTime = Date.now();
+
+    // Remove bubble from physics
+    const bubbleIndex = bubbles.indexOf(bubble);
+    if (bubbleIndex > -1) {
+        bubbles.splice(bubbleIndex, 1);
     }
 
-    canvas.addEventListener('touchstart', handleTouch);
-    canvas.addEventListener('touchmove', handleTouch);
-    canvas.addEventListener('touchend', () => {
-        touchTargetX = null; // Clear touch target when finger lifts
+    // Create flying animation outside canvas
+    const flyingLetter = document.createElement('div');
+    flyingLetter.style.cssText = `
+        position: absolute;
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: ${bubble.color};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+        font-family: 'Comic Sans MS', sans-serif;
+        color: #37474F;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 50;
+        pointer-events: none;
+        left: ${startX}px;
+        top: ${startY}px;
+        transform: translate(-50%, -50%);
+    `;
+    flyingLetter.textContent = bubble.letter;
+    document.getElementById('game-screen').appendChild(flyingLetter);
+
+    function animateFly() {
+        const elapsed = Date.now() - startTime;
+        progress = Math.min(1, elapsed / flyDuration);
+
+        // Ease out
+        const eased = 1 - Math.pow(1 - progress, 3);
+
+        const currentX = startX + (targetX - startX) * eased;
+        const currentY = startY + (targetY - startY) * eased;
+
+        flyingLetter.style.left = `${currentX}px`;
+        flyingLetter.style.top = `${currentY}px`;
+
+        if (progress < 1) {
+            requestAnimationFrame(animateFly);
+        } else {
+            // Arrived at slot - check if correct
+            flyingLetter.remove();
+            checkLetter(bubble.letter, expectedLetter, bubble);
+        }
+    }
+
+    requestAnimationFrame(animateFly);
+}
+
+function checkLetter(letter, expectedLetter, bubble) {
+    const slots = document.querySelectorAll('.letter-slot');
+    const currentSlot = slots[gameState.nextSlotIndex];
+
+    if (letter === expectedLetter) {
+        // Correct!
+        playCorrectSound();
+        currentSlot.textContent = letter;
+        currentSlot.classList.add('filled');
+        currentSlot.classList.remove('next');
+
+        gameState.filledSlots[gameState.nextSlotIndex] = letter;
+        gameState.nextSlotIndex++;
+
+        // Mark next slot
+        if (gameState.nextSlotIndex < slots.length) {
+            slots[gameState.nextSlotIndex].classList.add('next');
+        }
+
+        // Check if word complete
+        if (gameState.nextSlotIndex >= gameState.currentWord.word.length) {
+            wordComplete();
+        } else {
+            gameState.isProcessing = false;
+        }
+    } else {
+        // Wrong!
+        playWrongSound();
+        currentSlot.textContent = letter;
+        currentSlot.classList.add('wrong');
+
+        // Wobble and return
+        setTimeout(() => {
+            currentSlot.textContent = '';
+            currentSlot.classList.remove('wrong');
+
+            // Return bubble to play area
+            const padding = 50;
+            const newX = padding + Math.random() * (canvas.width - padding * 2);
+            const newY = padding + Math.random() * (canvas.height - padding * 2);
+
+            const newBubble = new Bubble(bubble.letter, newX, newY, bubble.isCorrect);
+            bubbles.push(newBubble);
+
+            gameState.isProcessing = false;
+        }, 500);
+    }
+}
+
+function wordComplete() {
+    playWordCompleteSound();
+
+    // Show celebration
+    const celebration = document.getElementById('celebration-overlay');
+    celebration.classList.remove('hidden');
+
+    setTimeout(() => {
+        celebration.classList.add('hidden');
+
+        gameState.wordsCompleted++;
+
+        if (gameState.wordsCompleted >= gameState.totalWords) {
+            // Level complete!
+            showLevelComplete();
+        } else {
+            // Next word from our shuffled list
+            gameState.currentWordIndex++;
+            gameState.currentWord = gameState.wordList[gameState.currentWordIndex % gameState.wordList.length];
+            gameState.isProcessing = false;
+            setupWord();
+        }
+    }, 1500);
+}
+
+function showLevelComplete() {
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('level-complete-screen').classList.remove('hidden');
+    cancelAnimationFrame(animationId);
+    releaseWakeLock();
+}
+
+// ==================== INPUT HANDLING ====================
+function handleTouchStart(e) {
+    e.preventDefault();
+    initAudio();
+
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+
+    // Find bubble under touch
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+        const bubble = bubbles[i];
+        if (bubble.containsPoint(x, y) && !bubble.isFlying) {
+            playPickupSound();
+            isDragging = true;
+            draggedBubble = bubble;
+            bubble.isBeingDragged = true;
+            dragOffset.x = bubble.x - x;
+            dragOffset.y = bubble.y - y;
+
+            // Move to front
+            bubbles.splice(i, 1);
+            bubbles.push(bubble);
+            return;
+        }
+    }
+}
+
+function handleTouchMove(e) {
+    e.preventDefault();
+
+    if (!isDragging || !draggedBubble) return;
+
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+
+    draggedBubble.x = x + dragOffset.x;
+    draggedBubble.y = y + dragOffset.y;
+}
+
+function handleTouchEnd(e) {
+    e.preventDefault();
+
+    if (!isDragging || !draggedBubble) return;
+
+    // If dragged near bottom (drop zone), try to place letter
+    if (draggedBubble.y > canvas.height - 50) {
+        tryPlaceLetter(draggedBubble);
+    }
+
+    if (draggedBubble) {
+        draggedBubble.isBeingDragged = false;
+    }
+    isDragging = false;
+    draggedBubble = null;
+}
+
+function handleTap(e) {
+    e.preventDefault();
+    initAudio();
+
+    const touch = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+
+    // Find bubble under tap
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+        const bubble = bubbles[i];
+        if (bubble.containsPoint(x, y) && !bubble.isFlying) {
+            tryPlaceLetter(bubble);
+            return;
+        }
+    }
+}
+
+// Handle both tap and drag
+let touchStartTime = 0;
+let touchStartPos = { x: 0, y: 0 };
+
+function handleTouchStartCombined(e) {
+    touchStartTime = Date.now();
+    const touch = e.touches[0];
+    touchStartPos = { x: touch.clientX, y: touch.clientY };
+    handleTouchStart(e);
+}
+
+function handleTouchEndCombined(e) {
+    const touchDuration = Date.now() - touchStartTime;
+    const touch = e.changedTouches[0];
+    const moveDistance = Math.sqrt(
+        Math.pow(touch.clientX - touchStartPos.x, 2) +
+        Math.pow(touch.clientY - touchStartPos.y, 2)
+    );
+
+    // If short tap with minimal movement, treat as tap
+    if (touchDuration < 200 && moveDistance < 20 && !gameState.isProcessing) {
+        handleTap(e);
+    } else {
+        handleTouchEnd(e);
+    }
+}
+
+// ==================== GAME LOOP ====================
+function update() {
+    bubbles.forEach(bubble => {
+        bubble.update(canvas.width, canvas.height, bubbles);
     });
 }
 
-// Screen Wake Lock to prevent screen from sleeping
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    bubbles.forEach(bubble => {
+        bubble.draw(ctx);
+    });
+}
+
+function gameLoop() {
+    update();
+    draw();
+    animationId = requestAnimationFrame(gameLoop);
+}
+
+// ==================== WAKE LOCK ====================
 async function requestWakeLock() {
     if ('wakeLock' in navigator) {
         try {
             wakeLock = await navigator.wakeLock.request('screen');
-            console.log('Wake lock acquired');
         } catch (err) {
             console.log('Wake lock failed:', err.message);
         }
@@ -163,279 +764,123 @@ function releaseWakeLock() {
     if (wakeLock !== null) {
         wakeLock.release();
         wakeLock = null;
-        console.log('Wake lock released');
     }
 }
 
-// Update game state
-function update() {
-    const settings = getDifficultySettings(level);
-
-    // Update player position based on touch (priority) or tilt
-    if (touchTargetX !== null) {
-        // Touch control: move paddle center toward touch position
-        const targetX = touchTargetX - player.width / 2;
-        player.x += (targetX - player.x) * 0.25;
-    } else {
-        // Tilt control
-        const targetX = player.x + (tiltX * TILT_SENSITIVITY);
-        player.x += (targetX - player.x) * 0.3;
-    }
-
-    // Keep player in bounds
-    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-
-    // Update opponent AI
-    opponent.reactionTimer += 1/60;
-    if (opponent.reactionTimer >= opponent.reactionDelay) {
-        // Predict where ball will be
-        if (ball.speedY < 0) {
-            // Ball coming toward opponent
-            let predictedX = ball.x;
-            if (Math.random() < settings.opponentAccuracy) {
-                // Accurate prediction
-                const timeToReach = (opponent.y + opponent.height - ball.y) / Math.abs(ball.speedY);
-                predictedX = ball.x + ball.speedX * timeToReach;
-                // Account for bounces off walls
-                while (predictedX < 0 || predictedX > canvas.width) {
-                    if (predictedX < 0) predictedX = -predictedX;
-                    if (predictedX > canvas.width) predictedX = 2 * canvas.width - predictedX;
-                }
-            } else {
-                // Inaccurate - add randomness
-                predictedX = ball.x + (Math.random() - 0.5) * canvas.width * 0.5;
-            }
-            opponent.targetX = predictedX - opponent.width / 2;
-        }
-        opponent.reactionTimer = 0;
-    }
-
-    // Move opponent toward target
-    const diff = opponent.targetX - opponent.x;
-    if (Math.abs(diff) > opponent.speed) {
-        opponent.x += Math.sign(diff) * opponent.speed;
-    } else {
-        opponent.x = opponent.targetX;
-    }
-
-    // Keep opponent in bounds
-    opponent.x = Math.max(0, Math.min(canvas.width - opponent.width, opponent.x));
-
-    // Update ball position
-    ball.x += ball.speedX;
-    ball.y += ball.speedY;
-
-    // Ball collision with walls
-    if (ball.x - ball.size/2 <= 0 || ball.x + ball.size/2 >= canvas.width) {
-        ball.speedX = -ball.speedX;
-        ball.x = ball.x - ball.size/2 <= 0 ? ball.size/2 : canvas.width - ball.size/2;
-    }
-
-    // Ball collision with player paddle
-    if (ball.y + ball.size/2 >= player.y &&
-        ball.y - ball.size/2 <= player.y + player.height &&
-        ball.x >= player.x &&
-        ball.x <= player.x + player.width &&
-        ball.speedY > 0) {
-
-        ball.speedY = -Math.abs(ball.speedY);
-
-        // Add angle based on where ball hits paddle
-        const hitPos = (ball.x - player.x) / player.width;
-        ball.speedX = (hitPos - 0.5) * ball.baseSpeed * 2;
-
-        rallies++;
-        checkLevelUp();
-    }
-
-    // Ball collision with opponent paddle
-    if (ball.y - ball.size/2 <= opponent.y + opponent.height &&
-        ball.y + ball.size/2 >= opponent.y &&
-        ball.x >= opponent.x &&
-        ball.x <= opponent.x + opponent.width &&
-        ball.speedY < 0) {
-
-        ball.speedY = Math.abs(ball.speedY);
-
-        // Add angle based on where ball hits paddle
-        const hitPos = (ball.x - opponent.x) / opponent.width;
-        ball.speedX = (hitPos - 0.5) * ball.baseSpeed * 2;
-    }
-
-    // Scoring
-    if (ball.y < 0) {
-        // Player scores - ball spawns from opponent side, comes toward player
-        playerScore++;
-        updateScoreDisplay();
-        resetBall(true);
-    }
-
-    if (ball.y > canvas.height) {
-        // Opponent scores - ball spawns from player side, goes toward opponent
-        opponentScore++;
-        updateScoreDisplay();
-
-        if (opponentScore >= 5) {
-            gameOver();
-            return;
-        }
-
-        resetBall(false);
-    }
-}
-
-function checkLevelUp() {
-    // Level up every 5 rallies
-    if (rallies > 0 && rallies % 5 === 0) {
-        level++;
-        document.getElementById('level').textContent = level;
-
-        // Update opponent settings for new level
-        const settings = getDifficultySettings(level);
-        opponent.speed = settings.opponentSpeed;
-        opponent.reactionDelay = settings.opponentReactionDelay;
-
-        // Speed up ball slightly
-        const speedMult = 1.1;
-        ball.speedX *= speedMult;
-        ball.speedY *= speedMult;
-        ball.baseSpeed = settings.ballSpeed;
-    }
-}
-
-// Render game
-function draw() {
-    // Clear canvas
-    ctx.fillStyle = DOS_BLACK;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = DOS_GREEN;
-
-    // Draw center line (dashed)
-    ctx.setLineDash([10, 10]);
-    ctx.strokeStyle = DOS_GREEN;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, canvas.height / 2);
-    ctx.lineTo(canvas.width, canvas.height / 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw player paddle
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-
-    // Draw opponent paddle
-    ctx.fillRect(opponent.x, opponent.y, opponent.width, opponent.height);
-
-    // Draw ball (square for DOS look)
-    ctx.fillRect(ball.x - ball.size/2, ball.y - ball.size/2, ball.size, ball.size);
-}
-
-// Game loop
-function gameLoop() {
-    if (!gameRunning) return;
-
-    update();
-    draw();
-
-    animationId = requestAnimationFrame(gameLoop);
-}
-
-// Update score display
-function updateScoreDisplay() {
-    document.getElementById('player-score').textContent = playerScore;
-    document.getElementById('opponent-score').textContent = opponentScore;
-}
-
-// Game over
-function gameOver() {
-    gameRunning = false;
-    cancelAnimationFrame(animationId);
-    releaseWakeLock();
-
-    document.getElementById('game-screen').classList.add('hidden');
-    document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('final-score').textContent =
-        `FINAL SCORE: ${playerScore} - ${opponentScore} | LEVEL: ${level}`;
-}
-
-// Start game
-async function startGame() {
+// ==================== GAME INITIALIZATION ====================
+function startGame() {
+    // Hide start screen, show game screen
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
 
     // Setup canvas
-    canvas = document.getElementById('game-canvas');
+    canvas = document.getElementById('bubble-canvas');
     ctx = canvas.getContext('2d');
 
-    // Set canvas size for portrait mode
-    const maxWidth = window.innerWidth - 20;
-    const maxHeight = window.innerHeight - 150;
+    // Size canvas to container
+    const bouncyZone = document.getElementById('bouncy-zone');
+    canvas.width = bouncyZone.clientWidth;
+    canvas.height = bouncyZone.clientHeight;
 
-    canvas.width = Math.min(maxWidth, 350);
-    canvas.height = Math.min(maxHeight, 500);
+    // Setup touch events
+    canvas.addEventListener('touchstart', handleTouchStartCombined, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEndCombined, { passive: false });
 
-    // Request orientation permission and wake lock
-    await requestOrientationPermission();
-    await requestWakeLock();
+    // Mouse events for desktop testing
+    canvas.addEventListener('mousedown', (e) => {
+        initAudio();
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-    // Setup touch controls (works alongside tilt)
-    setupTouchControls();
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+            const bubble = bubbles[i];
+            if (bubble.containsPoint(x, y) && !bubble.isFlying) {
+                playPickupSound();
+                tryPlaceLetter(bubble);
+                return;
+            }
+        }
+    });
 
-    // Initialize game
-    playerScore = 0;
-    opponentScore = 0;
-    level = 1;
-    rallies = 0;
+    // Initialize game state
+    gameState.wordsCompleted = 0;
+    gameState.currentWordIndex = Math.floor(Math.random() * WORD_LIST.length);
 
-    updateScoreDisplay();
-    document.getElementById('level').textContent = level;
+    // Sort words by length for progression
+    const sortedWords = [...WORD_LIST].sort((a, b) => a.word.length - b.word.length);
 
-    initGameObjects();
-
-    gameRunning = true;
-    gameLoop();
-}
-
-// Restart game
-async function restartGame() {
-    document.getElementById('game-over-screen').classList.add('hidden');
-    document.getElementById('game-screen').classList.remove('hidden');
-
-    // Re-acquire wake lock
-    await requestWakeLock();
-
-    playerScore = 0;
-    opponentScore = 0;
-    level = 1;
-    rallies = 0;
-
-    updateScoreDisplay();
-    document.getElementById('level').textContent = level;
-
-    initGameObjects();
-
-    gameRunning = true;
-    gameLoop();
-}
-
-// Event listeners
-document.getElementById('start-btn').addEventListener('click', startGame);
-document.getElementById('restart-btn').addEventListener('click', restartGame);
-
-// Prevent scrolling/zooming
-document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-
-// Handle visibility change (pause when tab hidden)
-document.addEventListener('visibilitychange', async () => {
-    if (document.hidden && gameRunning) {
-        cancelAnimationFrame(animationId);
-    } else if (!document.hidden && gameRunning) {
-        // Re-acquire wake lock when returning to game
-        await requestWakeLock();
-        gameLoop();
+    // Pick words based on difficulty
+    let wordPool;
+    if (gameState.difficulty === 'easy') {
+        wordPool = sortedWords.filter(w => w.word.length <= 4);
+    } else if (gameState.difficulty === 'medium') {
+        wordPool = sortedWords.filter(w => w.word.length <= 5);
+    } else {
+        wordPool = sortedWords;
     }
+
+    // Shuffle and pick words for this session
+    const shuffledPool = shuffleArray(wordPool);
+    gameState.totalWords = Math.min(10, shuffledPool.length);
+    gameState.currentWordIndex = 0;
+    gameState.currentWord = shuffledPool[0];
+
+    // Store shuffled words for this session
+    gameState.wordList = shuffledPool;
+
+    // Start the game
+    setupWord();
+    requestWakeLock();
+    gameLoop();
+}
+
+function playAgain() {
+    document.getElementById('level-complete-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.remove('hidden');
+}
+
+// ==================== EVENT LISTENERS ====================
+document.addEventListener('DOMContentLoaded', () => {
+    // Difficulty buttons
+    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+    difficultyBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            difficultyBtns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            gameState.difficulty = btn.dataset.difficulty;
+        });
+    });
+
+    // Start button
+    document.getElementById('start-btn').addEventListener('click', startGame);
+
+    // Play again button
+    document.getElementById('play-again-btn').addEventListener('click', playAgain);
+
+    // Handle resize
+    window.addEventListener('resize', () => {
+        if (canvas) {
+            const bouncyZone = document.getElementById('bouncy-zone');
+            canvas.width = bouncyZone.clientWidth;
+            canvas.height = bouncyZone.clientHeight;
+        }
+    });
+
+    // Handle visibility change
+    document.addEventListener('visibilitychange', async () => {
+        if (document.hidden && animationId) {
+            cancelAnimationFrame(animationId);
+        } else if (!document.hidden && canvas && gameState.currentWord) {
+            await requestWakeLock();
+            gameLoop();
+        }
+    });
 });
+
+// Prevent scrolling on touch
+document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
 // Register service worker
 if ('serviceWorker' in navigator) {

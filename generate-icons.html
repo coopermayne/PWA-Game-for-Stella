@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Generate Pong Icons</title>
+    <title>Generate Word Sluice Icons</title>
     <style>
-        body { font-family: monospace; background: #222; color: #33ff33; padding: 20px; }
-        button { background: #000; color: #33ff33; border: 2px solid #33ff33; padding: 10px 20px; cursor: pointer; margin: 10px; }
-        button:hover { background: #33ff33; color: #000; }
-        .preview { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-        .preview img { border: 1px solid #33ff33; }
+        body { font-family: 'Comic Sans MS', sans-serif; background: #E8F5E9; color: #37474F; padding: 20px; }
+        button { background: #66BB6A; color: white; border: none; padding: 15px 30px; cursor: pointer; margin: 10px; border-radius: 25px; font-size: 18px; }
+        button:hover { background: #4CAF50; }
+        .preview { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+        .preview img { border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .preview div { text-align: center; }
+        h1 { color: #42A5F5; }
     </style>
 </head>
 <body>
-    <h1>PONG Icon Generator</h1>
+    <h1>Word Sluice Icon Generator</h1>
     <p>Click the button below to generate and download all PWA icons.</p>
     <button id="generate">Generate & Download All Icons</button>
     <div class="preview" id="preview"></div>
@@ -26,36 +27,81 @@
             canvas.height = size;
             const ctx = canvas.getContext('2d');
 
-            // Background
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, size, size);
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, size);
+            gradient.addColorStop(0, '#81C784');
+            gradient.addColorStop(1, '#4CAF50');
+            ctx.fillStyle = gradient;
 
-            // Border
-            ctx.strokeStyle = '#33ff33';
-            ctx.lineWidth = Math.max(2, size / 32);
-            ctx.strokeRect(ctx.lineWidth/2, ctx.lineWidth/2, size - ctx.lineWidth, size - ctx.lineWidth);
-
-            // Draw PONG elements
-            const unit = size / 16;
-
-            ctx.fillStyle = '#33ff33';
-
-            // Top paddle
-            ctx.fillRect(size * 0.3, unit * 2, size * 0.4, unit);
-
-            // Bottom paddle
-            ctx.fillRect(size * 0.3, size - unit * 3, size * 0.4, unit);
-
-            // Ball
-            const ballSize = unit * 1.5;
-            ctx.fillRect(size/2 - ballSize/2, size/2 - ballSize/2, ballSize, ballSize);
-
-            // Center line (dashed)
-            ctx.setLineDash([unit/2, unit/2]);
+            // Rounded rectangle background
+            const radius = size * 0.15;
             ctx.beginPath();
-            ctx.moveTo(unit * 2, size/2);
-            ctx.lineTo(size - unit * 2, size/2);
-            ctx.stroke();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw letter bubbles
+            const bubbleColors = ['#FF8A80', '#82B1FF', '#FFD180', '#B388FF'];
+            const letters = ['A', 'B', 'C'];
+            const bubbleRadius = size * 0.18;
+
+            // Position bubbles in a triangle pattern
+            const positions = [
+                { x: size * 0.5, y: size * 0.28 },  // Top center
+                { x: size * 0.3, y: size * 0.58 },  // Bottom left
+                { x: size * 0.7, y: size * 0.58 }   // Bottom right
+            ];
+
+            positions.forEach((pos, i) => {
+                // Bubble shadow
+                ctx.beginPath();
+                ctx.arc(pos.x + 2, pos.y + 2, bubbleRadius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                ctx.fill();
+
+                // Bubble
+                const bubbleGradient = ctx.createRadialGradient(
+                    pos.x - bubbleRadius * 0.3, pos.y - bubbleRadius * 0.3, 0,
+                    pos.x, pos.y, bubbleRadius
+                );
+                bubbleGradient.addColorStop(0, '#FFFFFF');
+                bubbleGradient.addColorStop(0.4, bubbleColors[i]);
+                bubbleGradient.addColorStop(1, bubbleColors[i]);
+
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, bubbleRadius, 0, Math.PI * 2);
+                ctx.fillStyle = bubbleGradient;
+                ctx.fill();
+
+                // Bubble highlight
+                ctx.beginPath();
+                ctx.arc(pos.x - bubbleRadius * 0.35, pos.y - bubbleRadius * 0.35, bubbleRadius * 0.25, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fill();
+
+                // Letter
+                ctx.fillStyle = '#37474F';
+                ctx.font = `bold ${bubbleRadius * 1.2}px 'Comic Sans MS', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(letters[i], pos.x, pos.y + 2);
+            });
+
+            // "WS" text at bottom
+            if (size >= 128) {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `bold ${size * 0.12}px 'Comic Sans MS', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText('Word Sluice', size / 2, size * 0.88);
+            }
 
             return canvas;
         }
