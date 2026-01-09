@@ -1,4 +1,4 @@
-const CACHE_NAME = 'word-sluice-v5';
+const CACHE_NAME = 'word-sluice-v6';
 const ASSETS = [
     '/',
     '/index.html',

@@ -204,11 +204,7 @@ function playPickupSound() {
 
 // ==================== VISUAL EFFECTS ====================
 function createConfettiBurst(element) {
-    console.log('createConfettiBurst called, confetti available:', typeof confetti !== 'undefined');
-    if (typeof confetti === 'undefined') {
-        console.log('Confetti library not loaded!');
-        return;
-    }
+    if (typeof confetti === 'undefined') return;
 
     const rect = element.getBoundingClientRect();
     const centerX = (rect.left + rect.width / 2) / window.innerWidth;
