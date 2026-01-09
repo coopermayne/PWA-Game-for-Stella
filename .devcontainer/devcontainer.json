@@ -1,0 +1,11 @@
+{
+  "postCreateCommand": "npm install",
+  "postAttachCommand": "claude --dangerously-skip-permissions",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Dev Server",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}
