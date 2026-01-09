@@ -1,5 +1,13 @@
 // Word Sluice - Children's Educational Spelling Game
 
+// ==================== AUDIO POLYFILL (must be at top) ====================
+// Polyfill for exponentialDecayTo - add to AudioParam prototype
+if (typeof AudioParam !== 'undefined' && !AudioParam.prototype.exponentialDecayTo) {
+    AudioParam.prototype.exponentialDecayTo = function(value, endTime) {
+        this.exponentialRampToValueAtTime(Math.max(value, 0.0001), endTime);
+    };
+}
+
 // ==================== WORD LIST ====================
 const WORD_LIST = [
     // 3-letter words (easy start)
@@ -84,8 +92,6 @@ function playCorrectSound() {
     oscillator.frequency.setValueAtTime(1100, audioContext.currentTime + 0.05);
 
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialDecayTo = 0.01;
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
     gainNode.gain.exponentialDecayTo(0.01, audioContext.currentTime + 0.15);
 
     oscillator.start(audioContext.currentTime);
@@ -155,13 +161,6 @@ function playPickupSound() {
 
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.08);
-}
-
-// Polyfill for exponentialDecayTo
-if (typeof GainNode !== 'undefined' && !GainNode.prototype.exponentialDecayTo) {
-    AudioParam.prototype.exponentialDecayTo = function(value, endTime) {
-        this.exponentialRampToValueAtTime(Math.max(value, 0.0001), endTime);
-    };
 }
 
 // ==================== BUBBLE PHYSICS ====================
@@ -546,8 +545,7 @@ function checkLetter(letter, expectedLetter, bubble) {
     const currentSlot = slots[gameState.nextSlotIndex];
 
     if (letter === expectedLetter) {
-        // Correct!
-        playCorrectSound();
+        // Correct! Update UI and state FIRST, then play sound
         currentSlot.textContent = letter;
         currentSlot.classList.add('filled');
         currentSlot.classList.remove('next');
@@ -560,6 +558,9 @@ function checkLetter(letter, expectedLetter, bubble) {
             slots[gameState.nextSlotIndex].classList.add('next');
         }
 
+        // Play sound (wrapped in try-catch so errors don't break game)
+        try { playCorrectSound(); } catch (e) { console.log('Sound error:', e); }
+
         // Check if word complete
         if (gameState.nextSlotIndex >= gameState.currentWord.word.length) {
             wordComplete();
@@ -567,10 +568,11 @@ function checkLetter(letter, expectedLetter, bubble) {
             gameState.isProcessing = false;
         }
     } else {
-        // Wrong!
-        playWrongSound();
+        // Wrong! Update UI first, then play sound
         currentSlot.textContent = letter;
         currentSlot.classList.add('wrong');
+
+        try { playWrongSound(); } catch (e) { console.log('Sound error:', e); }
 
         // Wobble and return
         setTimeout(() => {
@@ -591,7 +593,7 @@ function checkLetter(letter, expectedLetter, bubble) {
 }
 
 function wordComplete() {
-    playWordCompleteSound();
+    try { playWordCompleteSound(); } catch (e) { /* ignore sound errors */ }
 
     // Show celebration
     const celebration = document.getElementById('celebration-overlay');
@@ -627,6 +629,13 @@ function handleTouchStart(e) {
     e.preventDefault();
     initAudio();
 
+    // Reset any previous drag state to ensure clean start
+    if (draggedBubble) {
+        draggedBubble.isBeingDragged = false;
+    }
+    isDragging = false;
+    draggedBubble = null;
+
     const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
     const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
@@ -636,7 +645,7 @@ function handleTouchStart(e) {
     for (let i = bubbles.length - 1; i >= 0; i--) {
         const bubble = bubbles[i];
         if (bubble.containsPoint(x, y) && !bubble.isFlying) {
-            playPickupSound();
+            try { playPickupSound(); } catch (e) { /* ignore sound errors */ }
             isDragging = true;
             draggedBubble = bubble;
             bubble.isBeingDragged = true;
@@ -670,8 +679,9 @@ function handleTouchEnd(e) {
 
     if (!isDragging || !draggedBubble) return;
 
-    // If dragged near bottom (drop zone), try to place letter
-    if (draggedBubble.y > canvas.height - 50) {
+    // If dragged toward bottom (toward the letter slots in drop zone), try to place letter
+    // Trigger when bubble is in bottom 50% of canvas or dragged below it
+    if (draggedBubble.y > canvas.height * 0.5) {
         tryPlaceLetter(draggedBubble);
     }
 
@@ -797,7 +807,7 @@ function startGame() {
         for (let i = bubbles.length - 1; i >= 0; i--) {
             const bubble = bubbles[i];
             if (bubble.containsPoint(x, y) && !bubble.isFlying) {
-                playPickupSound();
+                try { playPickupSound(); } catch (e) { /* ignore sound errors */ }
                 tryPlaceLetter(bubble);
                 return;
             }
