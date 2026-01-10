@@ -884,12 +884,14 @@ function releaseWakeLock() {
 }
 
 // ==================== GAME INITIALIZATION ====================
+let canvasInitialized = false;
+
 function startGame() {
     // Hide start screen, show game screen
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
 
-    // Setup canvas
+    // Setup canvas (only once)
     canvas = document.getElementById('bubble-canvas');
     ctx = canvas.getContext('2d');
 
@@ -898,31 +900,41 @@ function startGame() {
     canvas.width = bouncyZone.clientWidth;
     canvas.height = bouncyZone.clientHeight;
 
-    // Setup touch events
-    canvas.addEventListener('touchstart', handleTouchStartCombined, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEndCombined, { passive: false });
+    // Setup event listeners only once
+    if (!canvasInitialized) {
+        canvas.addEventListener('touchstart', handleTouchStartCombined, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEndCombined, { passive: false });
 
-    // Mouse events for desktop testing
-    canvas.addEventListener('mousedown', (e) => {
-        initAudio();
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        // Mouse events for desktop testing
+        canvas.addEventListener('mousedown', (e) => {
+            initAudio();
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-        for (let i = bubbles.length - 1; i >= 0; i--) {
-            const bubble = bubbles[i];
-            if (bubble.containsPoint(x, y) && !bubble.isFlying) {
-                try { playPickupSound(); } catch (e) { /* ignore sound errors */ }
-                tryPlaceLetter(bubble);
-                return;
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const bubble = bubbles[i];
+                if (bubble.containsPoint(x, y) && !bubble.isFlying) {
+                    try { playPickupSound(); } catch (e) { /* ignore sound errors */ }
+                    tryPlaceLetter(bubble);
+                    return;
+                }
             }
-        }
-    });
+        });
 
-    // Initialize game state
+        canvasInitialized = true;
+    }
+
+    // Reset game state
     gameState.wordsCompleted = 0;
     gameState.currentWordIndex = 0;
+    gameState.isProcessing = false;
+    gameState.nextSlotIndex = 0;
+    gameState.filledSlots = [];
+
+    // Clear previous word image
+    document.getElementById('word-image').innerHTML = '';
 
     // Shuffle all words for this session
     const shuffledPool = shuffleArray([...WORD_LIST]);
