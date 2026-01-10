@@ -17,6 +17,23 @@ const WORD_LIST = [
 
 const DECOY_LETTERS = 'QWXZJKVYPB';
 
+// 10 distinct vintage chip colors
+const CHIP_COLORS = [
+    '#722f37', // burgundy
+    '#1a5c38', // forest green
+    '#1a3a5c', // navy blue
+    '#6b4423', // saddle brown
+    '#4a235a', // purple
+    '#1c5a5a', // teal
+    '#8b4513', // sienna
+    '#2f4f4f', // dark slate
+    '#6b2d5c', // plum
+    '#3d5c1a', // olive
+];
+
+// Letter to color mapping for current game
+let letterColorMap = {};
+
 // ==================== GAME STATE ====================
 let gameState = {
     difficulty: 'easy',
@@ -249,26 +266,19 @@ function triggerScreenDarken() {
 
 // ==================== BUBBLE PHYSICS ====================
 class Bubble {
-    constructor(letter, x, y, isCorrect = true) {
+    constructor(letter, x, y) {
         this.letter = letter;
         this.x = x;
         this.y = y;
         this.radius = 35;
         this.vx = (Math.random() - 0.5) * 2;
         this.vy = (Math.random() - 0.5) * 2;
-        this.isCorrect = isCorrect;
-        this.color = isCorrect ? this.getLetterColor() : '#B0BEC5';
+        this.color = letterColorMap[letter] || '#722f37';
         this.isBeingDragged = false;
         this.isFlying = false;
         this.flyTarget = null;
         this.opacity = 1;
         this.scale = 1;
-    }
-
-    getLetterColor() {
-        // Vintage poker chip colors
-        const colors = ['#722f37', '#1a5c38', '#1a3a5c', '#5c1a3a', '#3a5c1a', '#5c3a1a', '#2c1a5c', '#5c1a1a'];
-        return colors[this.letter.charCodeAt(0) % colors.length];
     }
 
     update(canvasWidth, canvasHeight, allBubbles) {
@@ -538,9 +548,18 @@ function createBubbles(word) {
     const availableDecoys = DECOY_LETTERS.split('').filter(l => !letters.includes(l));
     const decoys = shuffleArray(availableDecoys).slice(0, decoyCount);
 
+    // Get all unique letters and assign colors
+    const allUniqueLetters = [...new Set([...letters, ...decoys])];
+    const shuffledColors = shuffleArray([...CHIP_COLORS]);
+
+    // Build color map for this word
+    letterColorMap = {};
+    allUniqueLetters.forEach((letter, index) => {
+        letterColorMap[letter] = shuffledColors[index % shuffledColors.length];
+    });
+
     // Combine and shuffle all letters
-    const allLetters = [...letters.map(l => ({ letter: l, isCorrect: true })),
-                        ...decoys.map(l => ({ letter: l, isCorrect: false }))];
+    const allLetters = [...letters, ...decoys];
     const shuffledLetters = shuffleArray(allLetters);
 
     // Position bubbles randomly in the bouncy zone
@@ -548,7 +567,7 @@ function createBubbles(word) {
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
 
-    shuffledLetters.forEach((item, index) => {
+    shuffledLetters.forEach((letter) => {
         let x, y, overlapping;
         let attempts = 0;
 
@@ -563,7 +582,7 @@ function createBubbles(word) {
             attempts++;
         } while (overlapping && attempts < 50);
 
-        const bubble = new Bubble(item.letter, x, y, item.isCorrect);
+        const bubble = new Bubble(letter, x, y);
         bubbles.push(bubble);
     });
 }
@@ -724,7 +743,7 @@ function checkLetter(letter, expectedLetter, bubble) {
             const newX = padding + Math.random() * (canvas.width - padding * 2);
             const newY = padding + Math.random() * (canvas.height - padding * 2);
 
-            const newBubble = new Bubble(bubble.letter, newX, newY, bubble.isCorrect);
+            const newBubble = new Bubble(bubble.letter, newX, newY);
             bubbles.push(newBubble);
 
             gameState.isProcessing = false;
