@@ -180,24 +180,24 @@ function createConfettiBurst(element) {
     const centerX = (rect.left + rect.width / 2) / window.innerWidth;
     const centerY = (rect.top + rect.height / 2) / window.innerHeight;
 
-    // Burst of confetti from the letter slot!
+    // Burst of gold coins/confetti from the letter slot!
     confetti({
         particleCount: 50,
         spread: 80,
         origin: { x: centerX, y: centerY },
-        colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F7DC6F', '#BB8FCE', '#85C1E9', '#FFD700'],
+        colors: ['#d4af37', '#f4d03f', '#c9a227', '#8b5a2b', '#722f37', '#f5f0e1'],
         startVelocity: 30,
         gravity: 0.8,
         scalar: 1.2,
         ticks: 100
     });
 
-    // Extra sparkle burst
+    // Extra gold sparkle burst
     confetti({
         particleCount: 20,
         spread: 360,
         origin: { x: centerX, y: centerY },
-        colors: ['#FFD700', '#FFA500', '#FFFF00'],
+        colors: ['#d4af37', '#f4d03f', '#ffd700'],
         startVelocity: 20,
         gravity: 0.5,
         scalar: 0.8,
@@ -266,7 +266,8 @@ class Bubble {
     }
 
     getLetterColor() {
-        const colors = ['#FF8A80', '#FF80AB', '#EA80FC', '#B388FF', '#82B1FF', '#80D8FF', '#84FFFF', '#A7FFEB', '#B9F6CA', '#CCFF90', '#F4FF81', '#FFE57F', '#FFD180', '#FF9E80'];
+        // Vintage poker chip colors
+        const colors = ['#722f37', '#1a5c38', '#1a3a5c', '#5c1a3a', '#3a5c1a', '#5c3a1a', '#2c1a5c', '#5c1a1a'];
         return colors[this.letter.charCodeAt(0) % colors.length];
     }
 
@@ -367,37 +368,70 @@ class Bubble {
         ctx.translate(this.x, this.y);
         ctx.scale(this.scale, this.scale);
 
-        // Draw bubble shadow
+        // Draw chip shadow
         ctx.beginPath();
-        ctx.arc(3, 3, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.arc(3, 4, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.fill();
 
-        // Draw bubble
-        const gradient = ctx.createRadialGradient(-10, -10, 0, 0, 0, this.radius);
-        gradient.addColorStop(0, '#FFFFFF');
-        gradient.addColorStop(0.3, this.color);
-        gradient.addColorStop(1, this.darkenColor(this.color, 20));
-
+        // Draw outer ring (gold edge)
         ctx.beginPath();
         ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#d4af37';
+        ctx.fill();
+
+        // Draw chip edge notches
+        const notchCount = 12;
+        for (let i = 0; i < notchCount; i++) {
+            const angle = (i / notchCount) * Math.PI * 2;
+            const notchX = Math.cos(angle) * (this.radius - 3);
+            const notchY = Math.sin(angle) * (this.radius - 3);
+            ctx.beginPath();
+            ctx.arc(notchX, notchY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+
+        // Draw main chip face
+        const gradient = ctx.createRadialGradient(0, -5, 0, 0, 0, this.radius * 0.85);
+        gradient.addColorStop(0, this.lightenColor(this.color, 30));
+        gradient.addColorStop(0.7, this.color);
+        gradient.addColorStop(1, this.darkenColor(this.color, 30));
+
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius * 0.82, 0, Math.PI * 2);
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        // Draw bubble highlight
+        // Draw inner gold ring
         ctx.beginPath();
-        ctx.arc(-10, -10, this.radius * 0.3, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.arc(0, 0, this.radius * 0.6, 0, Math.PI * 2);
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw cream center
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius * 0.55, 0, Math.PI * 2);
+        ctx.fillStyle = '#f5f0e1';
         ctx.fill();
 
         // Draw letter
-        ctx.fillStyle = '#37474F';
-        ctx.font = `bold ${this.radius}px 'Comic Sans MS', sans-serif`;
+        ctx.fillStyle = this.color;
+        ctx.font = `bold ${this.radius * 0.9}px 'Georgia', serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(this.letter, 0, 2);
 
         ctx.restore();
+    }
+
+    lightenColor(color, amount) {
+        const hex = color.replace('#', '');
+        const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + amount);
+        const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + amount);
+        const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + amount);
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     }
 
     darkenColor(color, amount) {

@@ -1,4 +1,6 @@
-/* Word Sluice - Child-friendly Spelling Game Styles */
+/* Word Sluice - Vintage Card Theme Styles */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Text:wght@400;600;700&display=swap');
 
 * {
     margin: 0;
@@ -11,23 +13,44 @@
 }
 
 :root {
-    --bg-color: #E8F5E9;
-    --primary-color: #66BB6A;
-    --secondary-color: #42A5F5;
-    --accent-color: #FFA726;
-    --error-color: #EF5350;
-    --success-color: #66BB6A;
-    --text-color: #37474F;
+    /* Vintage card table colors */
+    --felt-green: #1a5c38;
+    --felt-green-light: #237a4b;
+    --felt-green-dark: #0f3d25;
+    --wood-brown: #5c3a21;
+    --wood-brown-light: #8b5a2b;
+    --gold: #d4af37;
+    --gold-light: #f4d03f;
+    --cream: #f5f0e1;
+    --cream-dark: #e8dcc8;
+    --burgundy: #722f37;
+    --burgundy-light: #8b3a42;
+
+    /* Functional colors */
+    --primary-color: var(--gold);
+    --secondary-color: var(--burgundy);
+    --accent-color: var(--gold-light);
+    --error-color: #c0392b;
+    --success-color: var(--gold);
+    --text-color: #2c1810;
+    --text-light: var(--cream);
     --white: #FFFFFF;
-    --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.15);
+
+    /* Shadows */
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
+    --shadow-inset: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+
+    /* Textures */
+    --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    --felt-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='felt'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.9' numOctaves='3' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23237a4b' surfaceScale='1.5'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23felt)'/%3E%3C/svg%3E");
 }
 
 html, body {
     height: 100%;
     overflow: hidden;
-    font-family: 'Comic Sans MS', 'Chalkboard', 'Marker Felt', sans-serif;
-    background: linear-gradient(180deg, #E8F5E9 0%, #C8E6C9 100%);
+    font-family: 'Crimson Text', Georgia, serif;
+    background: var(--wood-brown);
 }
 
 #app {
@@ -55,11 +78,41 @@ html, body {
     display: none !important;
 }
 
+/* Felt texture overlay for screens */
+#start-screen::before,
+#game-screen::before,
+#level-complete-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: var(--noise);
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+}
+
+#start-screen > *,
+#game-screen > *,
+#level-complete-screen > * {
+    position: relative;
+    z-index: 1;
+}
+
 /* Start Screen */
 #start-screen {
-    background: linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 100%);
+    background:
+        radial-gradient(ellipse at center, var(--felt-green-light) 0%, var(--felt-green) 50%, var(--felt-green-dark) 100%);
     gap: 30px;
     padding: 20px;
+    border: 12px solid var(--wood-brown);
+    box-shadow:
+        inset 0 0 50px rgba(0, 0, 0, 0.3),
+        inset 0 0 100px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
 .title-container {
@@ -67,16 +120,23 @@ html, body {
 }
 
 .game-title {
-    font-size: 3rem;
-    color: var(--secondary-color);
-    text-shadow: 3px 3px 0 var(--white), 5px 5px 0 rgba(66, 165, 245, 0.3);
-    letter-spacing: 2px;
+    font-family: 'Cinzel', serif;
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--gold);
+    text-shadow:
+        2px 2px 0 var(--wood-brown),
+        0 0 20px rgba(212, 175, 55, 0.5);
+    letter-spacing: 4px;
+    text-transform: uppercase;
 }
 
 .subtitle {
     font-size: 1.3rem;
-    color: var(--text-color);
+    color: var(--cream);
     margin-top: 10px;
+    font-style: italic;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .difficulty-selector {
@@ -88,27 +148,33 @@ html, body {
 
 .difficulty-label {
     font-size: 1.2rem;
-    color: var(--text-color);
+    color: var(--cream);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .difficulty-btn {
     padding: 12px 30px;
     font-size: 1.1rem;
-    font-family: inherit;
-    border: 3px solid var(--secondary-color);
-    border-radius: 25px;
-    background: var(--white);
-    color: var(--secondary-color);
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(0,0,0,0.1) 100%),
+        linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+    color: var(--wood-brown);
     cursor: pointer;
     transition: all 0.2s ease;
     min-width: 150px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.4);
 }
 
 .difficulty-btn.selected {
-    background: var(--secondary-color);
-    color: var(--white);
+    background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold) 100%);
+    color: var(--wood-brown);
     transform: scale(1.05);
-    box-shadow: var(--shadow);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.6), var(--shadow);
+    border-color: var(--gold-light);
 }
 
 .difficulty-btn:active {
@@ -117,47 +183,58 @@ html, body {
 
 .big-button {
     padding: 18px 50px;
-    font-size: 1.5rem;
-    font-family: inherit;
-    border: none;
-    border-radius: 35px;
-    background: linear-gradient(180deg, #FFA726 0%, #FB8C00 100%);
-    color: var(--white);
+    font-size: 1.4rem;
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    border: 3px solid var(--gold-light);
+    border-radius: 12px;
+    background: linear-gradient(180deg, var(--burgundy-light) 0%, var(--burgundy) 100%);
+    color: var(--gold-light);
     cursor: pointer;
-    box-shadow: var(--shadow-lg), 0 6px 0 #E65100;
+    box-shadow: var(--shadow-lg), 0 6px 0 #4a1f25;
     transition: all 0.15s ease;
     margin-top: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .big-button:active {
     transform: translateY(4px);
-    box-shadow: var(--shadow), 0 2px 0 #E65100;
+    box-shadow: var(--shadow), 0 2px 0 #4a1f25;
 }
 
 /* Game Screen */
 #game-screen {
-    background: linear-gradient(180deg, #E8F5E9 0%, #C8E6C9 100%);
+    background:
+        radial-gradient(ellipse at center, var(--felt-green-light) 0%, var(--felt-green) 50%, var(--felt-green-dark) 100%);
     justify-content: flex-start;
     padding: 10px;
     gap: 0;
+    border: 12px solid var(--wood-brown);
+    box-shadow:
+        inset 0 0 50px rgba(0, 0, 0, 0.3),
+        inset 0 0 100px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
 /* Progress Bar */
 #progress-bar {
     width: 100%;
     height: 30px;
-    background: var(--white);
+    background: linear-gradient(180deg, var(--wood-brown) 0%, var(--wood-brown-light) 50%, var(--wood-brown) 100%);
     border-radius: 15px;
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow), inset 0 2px 4px rgba(0, 0, 0, 0.3);
     margin-bottom: 10px;
+    border: 2px solid var(--gold);
 }
 
 #progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #66BB6A, #81C784);
-    border-radius: 15px;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+    border-radius: 12px;
     transition: width 0.5s ease;
     width: 10%;
 }
@@ -169,7 +246,9 @@ html, body {
     transform: translate(-50%, -50%);
     font-size: 0.9rem;
     font-weight: bold;
-    color: var(--text-color);
+    color: var(--cream);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-family: 'Cinzel', serif;
 }
 
 /* Image Zone */
@@ -239,10 +318,10 @@ html, body {
     flex: 1;
     position: relative;
     overflow: hidden;
-    background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 100%);
-    border-radius: 20px;
+    background: transparent;
+    border-radius: 10px;
     margin: 10px 0;
-    box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+    box-shadow: none;
 }
 
 #bubble-canvas {
@@ -260,9 +339,25 @@ html, body {
     align-items: center;
     justify-content: center;
     padding: 15px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.95) 100%);
-    border-radius: 25px 25px 0 0;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    background:
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 2px,
+            rgba(0,0,0,0.03) 2px,
+            rgba(0,0,0,0.03) 4px
+        ),
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 30px,
+            rgba(0,0,0,0.02) 30px,
+            rgba(0,0,0,0.02) 60px
+        ),
+        linear-gradient(180deg, var(--wood-brown) 0%, var(--wood-brown-light) 50%, var(--wood-brown) 100%);
+    border-radius: 15px 15px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3), inset 0 2px 10px rgba(255,255,255,0.1);
+    border-top: 3px solid var(--gold);
 }
 
 #letter-slots {
@@ -279,25 +374,31 @@ html, body {
     min-width: 0;
     max-width: 70px;
     aspect-ratio: 1;
-    background: var(--white);
-    border: 4px dashed #B0BEC5;
-    border-radius: 15px;
+    background:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23f5f0e1' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E"),
+        linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+    background-blend-mode: overlay;
+    border: 3px solid var(--gold);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: clamp(1.2rem, 5vw, 2rem);
     font-weight: bold;
+    font-family: 'Cinzel', serif;
     color: var(--text-color);
     transition: all 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .letter-slot.filled {
     border-style: solid;
-    border-color: var(--success-color);
-    border-width: 4px;
-    background: linear-gradient(180deg, #A5D6A7 0%, #81C784 100%);
-    box-shadow: 0 0 15px rgba(102, 187, 106, 0.5), 0 0 30px rgba(102, 187, 106, 0.2);
+    border-color: var(--gold-light);
+    border-width: 3px;
+    background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold) 100%);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5), 0 0 30px rgba(212, 175, 55, 0.2);
     animation: filledPop 0.3s ease;
+    color: var(--wood-brown);
 }
 
 @keyframes filledPop {
@@ -309,16 +410,18 @@ html, body {
 .letter-slot.wrong {
     animation: wobble 0.6s ease;
     border-color: var(--error-color);
-    border-width: 5px;
-    background: linear-gradient(180deg, #FF8A80 0%, #FF5252 100%);
-    box-shadow: 0 0 20px rgba(244, 67, 54, 0.6), 0 0 40px rgba(244, 67, 54, 0.3);
+    border-width: 4px;
+    background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%);
+    box-shadow: 0 0 20px rgba(192, 57, 43, 0.6), 0 0 40px rgba(192, 57, 43, 0.3);
     transform-origin: center center;
+    color: var(--cream);
 }
 
 .letter-slot.next {
-    border-color: var(--secondary-color);
-    border-width: 4px;
+    border-color: var(--gold-light);
+    border-width: 3px;
     animation: pulse 1s ease infinite;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 }
 
 @keyframes wobble {
@@ -362,8 +465,8 @@ html, body {
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(66, 165, 245, 0.4); }
-    50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(66, 165, 245, 0); }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
+    50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
 }
 
 /* Celebration Overlay */
@@ -373,7 +476,7 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.9);
+    background: radial-gradient(ellipse at center, rgba(26, 92, 56, 0.95) 0%, rgba(15, 61, 37, 0.98) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -386,18 +489,23 @@ html, body {
 }
 
 .celebration-text {
+    font-family: 'Cinzel', serif;
     font-size: 3rem;
-    color: var(--primary-color);
+    color: var(--gold);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 0 0 30px rgba(212, 175, 55, 0.5);
     animation: bounceIn 0.5s ease;
+    text-transform: uppercase;
+    letter-spacing: 4px;
 }
 
 .stars {
     font-size: 3rem;
     margin-bottom: 20px;
+    color: var(--gold);
 }
 
 .stars::before {
-    content: "* * *";
+    content: "★ ★ ★";
     animation: sparkle 0.5s ease infinite alternate;
 }
 
@@ -419,8 +527,15 @@ html, body {
 
 /* Level Complete Screen */
 #level-complete-screen {
-    background: linear-gradient(180deg, #FFF8E1 0%, #FFECB3 100%);
+    background:
+        radial-gradient(ellipse at center, var(--felt-green-light) 0%, var(--felt-green) 50%, var(--felt-green-dark) 100%);
     gap: 30px;
+    border: 12px solid var(--wood-brown);
+    box-shadow:
+        inset 0 0 50px rgba(0, 0, 0, 0.3),
+        inset 0 0 100px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
 .complete-content {
@@ -429,16 +544,20 @@ html, body {
 }
 
 .complete-title {
-    font-size: 3.5rem;
-    color: var(--accent-color);
-    text-shadow: 3px 3px 0 var(--white);
+    font-family: 'Cinzel', serif;
+    font-size: 3rem;
+    color: var(--gold);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 0 0 30px rgba(212, 175, 55, 0.5);
     animation: bounceIn 0.6s ease;
+    text-transform: uppercase;
+    letter-spacing: 3px;
 }
 
 .complete-subtitle {
     font-size: 1.3rem;
-    color: var(--text-color);
+    color: var(--cream);
     margin-top: 10px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .stars-display {
@@ -447,8 +566,8 @@ html, body {
 
 .star {
     font-size: 4rem;
-    color: #FFD54F;
-    text-shadow: 2px 2px 0 #FFA000;
+    color: var(--gold);
+    text-shadow: 2px 2px 0 var(--wood-brown), 0 0 20px rgba(212, 175, 55, 0.6);
     display: inline-block;
     animation: starPop 0.3s ease forwards;
     opacity: 0;
