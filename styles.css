@@ -175,24 +175,50 @@ html, body {
 /* Image Zone */
 #image-zone {
     width: 100%;
-    flex: 0 0 25%;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 10px;
+    height: 220px;
 }
 
 #word-image {
-    width: 80%;
-    max-width: 300px;
-    aspect-ratio: 4/3;
-    background: linear-gradient(135deg, #FFE0B2 0%, #FFCC80 100%);
-    border-radius: 25px;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.card-image {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 10px;
     box-shadow: var(--shadow-lg);
-    border: 4px solid var(--white);
+}
+
+#word-image.card-exit {
+    transform: scale(0.8) rotateY(90deg);
+    opacity: 0;
+}
+
+#word-image.card-enter {
+    animation: cardEnter 0.4s ease forwards;
+}
+
+@keyframes cardEnter {
+    0% {
+        transform: scale(0.8) rotateY(-90deg);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1) rotateY(0deg);
+        opacity: 1;
+    }
 }
 
 #word-hint {
@@ -241,21 +267,25 @@ html, body {
 
 #letter-slots {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     justify-content: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 500px;
 }
 
 .letter-slot {
-    width: 60px;
-    height: 70px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 70px;
+    aspect-ratio: 1;
     background: var(--white);
     border: 4px dashed #B0BEC5;
     border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
+    font-size: clamp(1.2rem, 5vw, 2rem);
     font-weight: bold;
     color: var(--text-color);
     transition: all 0.2s ease;
@@ -439,12 +469,6 @@ html, body {
         font-size: 2.2rem;
     }
 
-    .letter-slot {
-        width: 50px;
-        height: 60px;
-        font-size: 1.6rem;
-    }
-
     #word-hint {
         font-size: 2rem;
         letter-spacing: 5px;
@@ -453,12 +477,6 @@ html, body {
 
 @media (min-height: 800px) {
     #image-zone {
-        flex: 0 0 28%;
-    }
-
-    .letter-slot {
-        width: 70px;
-        height: 80px;
-        font-size: 2.2rem;
+        height: 260px;
     }
 }

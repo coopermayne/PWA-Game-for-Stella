@@ -10,39 +10,9 @@ if (typeof AudioParam !== 'undefined' && !AudioParam.prototype.exponentialDecayT
 
 // ==================== WORD LIST ====================
 const WORD_LIST = [
-    // 3-letter words (easy start)
-    { word: 'CAT', color: '#FFB74D' },
-    { word: 'DOG', color: '#81C784' },
-    { word: 'MOM', color: '#F48FB1' },
-    { word: 'DAD', color: '#64B5F6' },
-    { word: 'SUN', color: '#FFD54F' },
-    { word: 'BUS', color: '#FFB74D' },
-    { word: 'HAT', color: '#CE93D8' },
-    { word: 'PIG', color: '#F48FB1' },
-    { word: 'CUP', color: '#4FC3F7' },
-    { word: 'BED', color: '#A5D6A7' },
-    // 4-letter words
-    { word: 'FISH', color: '#4FC3F7' },
-    { word: 'BIRD', color: '#FFD54F' },
-    { word: 'TREE', color: '#81C784' },
-    { word: 'STAR', color: '#FFD54F' },
-    { word: 'BOOK', color: '#FFCC80' },
-    { word: 'FROG', color: '#A5D6A7' },
-    { word: 'DUCK', color: '#FFD54F' },
-    { word: 'CAKE', color: '#F48FB1' },
-    { word: 'BALL', color: '#EF5350' },
-    { word: 'MOON', color: '#B0BEC5' },
-    // 5-letter words
-    { word: 'APPLE', color: '#EF5350' },
-    { word: 'HOUSE', color: '#FFCC80' },
-    { word: 'WATER', color: '#4FC3F7' },
-    { word: 'SMILE', color: '#FFD54F' },
-    { word: 'HAPPY', color: '#FFD54F' },
-    { word: 'CLOUD', color: '#90CAF9' },
-    { word: 'GRASS', color: '#81C784' },
-    { word: 'TRAIN', color: '#EF5350' },
-    { word: 'HORSE', color: '#BCAAA4' },
-    { word: 'PLANT', color: '#81C784' }
+    { word: 'COOPER', image: 'images/Cooper.png' },
+    { word: 'THOM', image: 'images/Thom.png' },
+    { word: 'HALLIE', image: 'images/Hallie.png' }
 ];
 
 const DECOY_LETTERS = 'QWXZJKVYPB';
@@ -464,18 +434,36 @@ function setupWord() {
     const wordData = gameState.currentWord;
     const word = wordData.word;
 
-    // Update word hint
-    const wordHint = document.getElementById('word-hint');
-    if (gameState.difficulty === 'hard') {
-        wordHint.classList.add('hidden-hint');
-    } else {
-        wordHint.classList.remove('hidden-hint');
-        wordHint.textContent = word;
+    // Update word image with animation
+    const wordImage = document.getElementById('word-image');
+    const isFirstWord = gameState.wordsCompleted === 0 && wordImage.innerHTML.trim() === '';
+
+    function updateCardContent() {
+        if (wordData.image) {
+            wordImage.innerHTML = `<img src="${wordData.image}" alt="${word}" class="card-image">`;
+            wordImage.style.background = 'transparent';
+        } else {
+            wordImage.innerHTML = `<span id="word-hint">${word}</span>`;
+            wordImage.style.background = `linear-gradient(135deg, #FFE0B2 0%, #FFCC80 100%)`;
+        }
+
+        // Animate in new card
+        wordImage.classList.remove('card-exit');
+        wordImage.classList.add('card-enter');
+
+        setTimeout(() => {
+            wordImage.classList.remove('card-enter');
+        }, 400);
     }
 
-    // Update word image background color
-    const wordImage = document.getElementById('word-image');
-    wordImage.style.background = `linear-gradient(135deg, ${wordData.color}40 0%, ${wordData.color}80 100%)`;
+    if (isFirstWord) {
+        // No exit animation for first card
+        updateCardContent();
+    } else {
+        // Animate out old card, then update
+        wordImage.classList.add('card-exit');
+        setTimeout(updateCardContent, 300);
+    }
 
     // Create letter slots
     const slotsContainer = document.getElementById('letter-slots');
@@ -934,25 +922,11 @@ function startGame() {
 
     // Initialize game state
     gameState.wordsCompleted = 0;
-    gameState.currentWordIndex = Math.floor(Math.random() * WORD_LIST.length);
-
-    // Sort words by length for progression
-    const sortedWords = [...WORD_LIST].sort((a, b) => a.word.length - b.word.length);
-
-    // Pick words based on difficulty
-    let wordPool;
-    if (gameState.difficulty === 'easy') {
-        wordPool = sortedWords.filter(w => w.word.length <= 4);
-    } else if (gameState.difficulty === 'medium') {
-        wordPool = sortedWords.filter(w => w.word.length <= 5);
-    } else {
-        wordPool = sortedWords;
-    }
-
-    // Shuffle and pick words for this session
-    const shuffledPool = shuffleArray(wordPool);
-    gameState.totalWords = Math.min(10, shuffledPool.length);
     gameState.currentWordIndex = 0;
+
+    // Shuffle all words for this session
+    const shuffledPool = shuffleArray([...WORD_LIST]);
+    gameState.totalWords = shuffledPool.length;
     gameState.currentWord = shuffledPool[0];
 
     // Store shuffled words for this session
@@ -1010,11 +984,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // Prevent scrolling on touch
 document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
-// Register service worker
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('SW registered'))
-            .catch(err => console.log('SW registration failed:', err));
-    });
-}
+// Register service worker (disabled during development)
+// if ('serviceWorker' in navigator) {
+//     window.addEventListener('load', () => {
+//         navigator.serviceWorker.register('sw.js')
+//             .then(reg => console.log('SW registered'))
+//             .catch(err => console.log('SW registration failed:', err));
+//     });
+// }

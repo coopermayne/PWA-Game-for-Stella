@@ -1,4 +1,4 @@
-const CACHE_NAME = 'word-sluice-v6';
+const CACHE_NAME = 'word-sluice-v8';
 const ASSETS = [
     '/',
     '/index.html',
@@ -12,7 +12,10 @@ const ASSETS = [
     '/icons/icon-152.png',
     '/icons/icon-192.png',
     '/icons/icon-384.png',
-    '/icons/icon-512.png'
+    '/icons/icon-512.png',
+    '/images/Cooper.png',
+    '/images/Thom.png',
+    '/images/Hallie.png'
 ];
 
 // Install event - cache assets
