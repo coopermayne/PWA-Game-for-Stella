@@ -4,9 +4,26 @@
   "description": "Word Sluice - A fun spelling game for kids",
   "scripts": {
     "start": "npx serve .",
-    "dev": "npx serve . -l 3000"
+    "dev": "npx serve . -l 3000",
+    "admin": "python admin-server.py"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.0.0"
   },
   "devDependencies": {
     "serve": "^14.2.0"
-  }
+  },
+  "main": "game.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coopermayne/PWA-Game-for-Stella.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/coopermayne/PWA-Game-for-Stella/issues"
+  },
+  "homepage": "https://github.com/coopermayne/PWA-Game-for-Stella#readme"
 }
