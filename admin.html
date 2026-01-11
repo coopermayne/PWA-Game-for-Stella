@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Admin - Word Sluice</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #d4af37;
+        }
+
+        h2 {
+            color: #d4af37;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .sections {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .sections {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #0f0f23;
+            color: #eee;
+            font-size: 16px;
+        }
+
+        input[type="file"] {
+            cursor: pointer;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #d4af37;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background: #f4d03f;
+        }
+
+        .btn-primary:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: #eee;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .btn-danger {
+            background: #c0392b;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #e74c3c;
+        }
+
+        /* Cropper section */
+        .cropper-container-wrapper {
+            max-height: 400px;
+            margin-bottom: 15px;
+            background: #0f0f23;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .cropper-container-wrapper img {
+            max-width: 100%;
+            display: block;
+        }
+
+        .crop-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .crop-preview img {
+            max-width: 200px;
+            max-height: 280px;
+            border: 2px solid #d4af37;
+            border-radius: 8px;
+        }
+
+        /* Preview card */
+        .preview-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #0f0f23;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .preview-section img {
+            max-width: 180px;
+            max-height: 252px;
+            border-radius: 8px;
+        }
+
+        .preview-section h3 {
+            margin-bottom: 15px;
+            color: #d4af37;
+        }
+
+        /* Status messages */
+        .status {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success {
+            background: #27ae60;
+            color: #fff;
+        }
+
+        .status.error {
+            background: #c0392b;
+            color: #fff;
+        }
+
+        .status.loading {
+            background: #2980b9;
+            color: #fff;
+        }
+
+        /* Cards list */
+        .cards-section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .card-item {
+            background: #0f0f23;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .card-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: #f5f0e1;
+            margin-bottom: 8px;
+        }
+
+        .card-item .word {
+            font-weight: bold;
+            color: #d4af37;
+            margin-bottom: 5px;
+        }
+
+        .card-item .type {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .card-item button {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #333;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background: #16213e;
+            color: #d4af37;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .info-text {
+            font-size: 13px;
+            color: #888;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Card Admin</h1>
+
+        <div class="sections">
+            <!-- Number Card Upload -->
+            <div class="section">
+                <h2>Number Card (A-10)</h2>
+                <p class="info-text">Upload a photo, crop to portrait size, background will be removed automatically.</p>
+
+                <div id="number-status" class="status"></div>
+
+                <div class="form-group">
+                    <label>1. Select Image</label>
+                    <input type="file" id="number-image" accept="image/*">
+                </div>
+
+                <div id="cropper-wrapper" class="cropper-container-wrapper hidden">
+                    <img id="cropper-image" src="">
+                </div>
+
+                <div class="form-group">
+                    <label>2. Enter Word</label>
+                    <input type="text" id="number-word" placeholder="e.g., DOG, CAT, APPLE">
+                </div>
+
+                <div class="button-row">
+                    <button id="process-number-btn" class="btn-primary" disabled>Process Card</button>
+                </div>
+
+                <div id="number-preview" class="preview-section hidden">
+                    <h3>Preview (Background Removed)</h3>
+                    <img id="number-preview-img" src="">
+                    <div class="button-row" style="justify-content: center;">
+                        <button id="confirm-number-btn" class="btn-primary">Confirm & Upload</button>
+                        <button id="cancel-number-btn" class="btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Face Card Upload -->
+            <div class="section">
+                <h2>Face Card (J, Q, K)</h2>
+                <p class="info-text">Upload a custom face card image. No cropping or background removal.</p>
+
+                <div id="face-status" class="status"></div>
+
+                <div class="form-group">
+                    <label>1. Select Image</label>
+                    <input type="file" id="face-image" accept="image/*">
+                </div>
+
+                <div id="face-preview-wrapper" class="hidden" style="margin-bottom: 15px;">
+                    <img id="face-preview-img" src="" style="max-width: 200px; border-radius: 8px;">
+                </div>
+
+                <div class="form-group">
+                    <label>2. Enter Word</label>
+                    <input type="text" id="face-word" placeholder="e.g., STELLA, MOMMY">
+                </div>
+
+                <div class="button-row">
+                    <button id="upload-face-btn" class="btn-primary" disabled>Upload Face Card</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Existing Cards -->
+        <div class="cards-section">
+            <h2>Existing Cards (<span id="card-count">0</span>)</h2>
+
+            <div class="tabs">
+                <button class="tab active" data-filter="all">All</button>
+                <button class="tab" data-filter="number">Number Cards</button>
+                <button class="tab" data-filter="face">Face Cards</button>
+            </div>
+
+            <div id="cards-grid" class="cards-grid">
+                <!-- Cards will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script>
+        // State
+        let cropper = null;
+        let currentFilter = 'all';
+        let tempFilename = null;
+
+        // DOM Elements
+        const numberImage = document.getElementById('number-image');
+        const cropperWrapper = document.getElementById('cropper-wrapper');
+        const cropperImage = document.getElementById('cropper-image');
+        const numberWord = document.getElementById('number-word');
+        const processNumberBtn = document.getElementById('process-number-btn');
+        const numberPreview = document.getElementById('number-preview');
+        const numberPreviewImg = document.getElementById('number-preview-img');
+        const confirmNumberBtn = document.getElementById('confirm-number-btn');
+        const cancelNumberBtn = document.getElementById('cancel-number-btn');
+        const numberStatus = document.getElementById('number-status');
+
+        const faceImage = document.getElementById('face-image');
+        const facePreviewWrapper = document.getElementById('face-preview-wrapper');
+        const facePreviewImg = document.getElementById('face-preview-img');
+        const faceWord = document.getElementById('face-word');
+        const uploadFaceBtn = document.getElementById('upload-face-btn');
+        const faceStatus = document.getElementById('face-status');
+
+        const cardsGrid = document.getElementById('cards-grid');
+        const cardCount = document.getElementById('card-count');
+        const tabs = document.querySelectorAll('.tab');
+
+        // Status helpers
+        function showStatus(element, message, type) {
+            element.textContent = message;
+            element.className = `status show ${type}`;
+        }
+
+        function hideStatus(element) {
+            element.className = 'status';
+        }
+
+        // Number Card: Image selection
+        numberImage.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Upload temp file
+            const formData = new FormData();
+            formData.append('image', file);
+
+            showStatus(numberStatus, 'Uploading image...', 'loading');
+
+            try {
+                const response = await fetch('/api/upload-temp', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Upload failed');
+                }
+
+                tempFilename = result.filename;
+
+                // Show cropper
+                cropperImage.src = result.path;
+                cropperWrapper.classList.remove('hidden');
+
+                // Initialize cropper after image loads
+                cropperImage.onload = () => {
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+
+                    cropper = new Cropper(cropperImage, {
+                        aspectRatio: 2.5 / 3.5,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 0.8,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                    });
+
+                    processNumberBtn.disabled = false;
+                    hideStatus(numberStatus);
+                };
+
+            } catch (error) {
+                showStatus(numberStatus, error.message, 'error');
+            }
+        });
+
+        // Number Card: Process
+        processNumberBtn.addEventListener('click', async () => {
+            const word = numberWord.value.trim();
+            if (!word) {
+                showStatus(numberStatus, 'Please enter a word', 'error');
+                return;
+            }
+
+            if (!cropper || !tempFilename) {
+                showStatus(numberStatus, 'Please select an image first', 'error');
+                return;
+            }
+
+            const cropData = cropper.getData(true);
+
+            showStatus(numberStatus, 'Processing... (removing background)', 'loading');
+            processNumberBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/process-number-card', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filename: tempFilename,
+                        word: word,
+                        cropX: Math.round(cropData.x),
+                        cropY: Math.round(cropData.y),
+                        cropWidth: Math.round(cropData.width),
+                        cropHeight: Math.round(cropData.height)
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Processing failed');
+                }
+
+                // Show preview
+                numberPreviewImg.src = result.preview;
+                numberPreview.classList.remove('hidden');
+                hideStatus(numberStatus);
+
+            } catch (error) {
+                showStatus(numberStatus, error.message, 'error');
+                processNumberBtn.disabled = false;
+            }
+        });
+
+        // Number Card: Confirm
+        confirmNumberBtn.addEventListener('click', async () => {
+            const word = numberWord.value.trim();
+
+            showStatus(numberStatus, 'Uploading to Cloudflare...', 'loading');
+            confirmNumberBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/confirm-number-card', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ word })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Upload failed');
+                }
+
+                showStatus(numberStatus, `Success! Card "${word}" added. Total: ${result.totalCards}`, 'success');
+
+                // Reset form
+                resetNumberForm();
+                loadCards();
+
+            } catch (error) {
+                showStatus(numberStatus, error.message, 'error');
+                confirmNumberBtn.disabled = false;
+            }
+        });
+
+        // Number Card: Cancel
+        cancelNumberBtn.addEventListener('click', () => {
+            numberPreview.classList.add('hidden');
+            processNumberBtn.disabled = false;
+        });
+
+        function resetNumberForm() {
+            numberImage.value = '';
+            numberWord.value = '';
+            cropperWrapper.classList.add('hidden');
+            numberPreview.classList.add('hidden');
+            processNumberBtn.disabled = true;
+            confirmNumberBtn.disabled = false;
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            tempFilename = null;
+        }
+
+        // Face Card: Image selection
+        faceImage.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                facePreviewImg.src = e.target.result;
+                facePreviewWrapper.classList.remove('hidden');
+                updateFaceButton();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        faceWord.addEventListener('input', updateFaceButton);
+
+        function updateFaceButton() {
+            uploadFaceBtn.disabled = !(faceImage.files.length > 0 && faceWord.value.trim());
+        }
+
+        // Face Card: Upload
+        uploadFaceBtn.addEventListener('click', async () => {
+            const file = faceImage.files[0];
+            const word = faceWord.value.trim();
+
+            if (!file || !word) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('word', word);
+
+            showStatus(faceStatus, 'Uploading to Cloudflare...', 'loading');
+            uploadFaceBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/process-face-card', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Upload failed');
+                }
+
+                showStatus(faceStatus, `Success! Face card "${word}" added. Total: ${result.totalCards}`, 'success');
+
+                // Reset form
+                faceImage.value = '';
+                faceWord.value = '';
+                facePreviewWrapper.classList.add('hidden');
+                uploadFaceBtn.disabled = true;
+                loadCards();
+
+            } catch (error) {
+                showStatus(faceStatus, error.message, 'error');
+                uploadFaceBtn.disabled = false;
+            }
+        });
+
+        // Tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.filter;
+                renderCards();
+            });
+        });
+
+        // Load and render cards
+        let allCards = [];
+
+        async function loadCards() {
+            try {
+                const response = await fetch('/api/cards');
+                const data = await response.json();
+                allCards = data.cards || [];
+                cardCount.textContent = allCards.length;
+                renderCards();
+            } catch (error) {
+                console.error('Failed to load cards:', error);
+            }
+        }
+
+        function renderCards() {
+            const filtered = currentFilter === 'all'
+                ? allCards
+                : allCards.filter(c => c.type === currentFilter);
+
+            cardsGrid.innerHTML = filtered.map(card => `
+                <div class="card-item">
+                    <img src="${card.imageUrl}" alt="${card.word}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22>?</text></svg>'">
+                    <div class="word">${card.word}</div>
+                    <div class="type">${card.type}</div>
+                    <button class="btn-danger" onclick="deleteCard('${card.id}')">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteCard(cardId) {
+            if (!confirm('Delete this card?')) return;
+
+            try {
+                const response = await fetch(`/api/delete-card/${cardId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Delete failed');
+                }
+
+                loadCards();
+            } catch (error) {
+                alert('Failed to delete card: ' + error.message);
+            }
+        }
+
+        // Initial load
+        loadCards();
+    </script>
+</body>
+</html>
