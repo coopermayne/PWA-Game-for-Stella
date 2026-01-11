@@ -1,0 +1,40 @@
+{
+  "cards": [
+    {
+      "id": "cooper-1",
+      "word": "COOPER",
+      "imageUrl": "images/Cooper.png",
+      "type": "number"
+    },
+    {
+      "id": "thom-1",
+      "word": "THOM",
+      "imageUrl": "images/Thom.png",
+      "type": "number"
+    },
+    {
+      "id": "tessa-1",
+      "word": "TESSA",
+      "imageUrl": "images/Tessa.png",
+      "type": "number"
+    },
+    {
+      "id": "blythe-1",
+      "word": "BLYTHE",
+      "imageUrl": "images/Blythe.png",
+      "type": "number"
+    },
+    {
+      "id": "sam-1",
+      "word": "SAM",
+      "imageUrl": "images/Sam.png",
+      "type": "number"
+    },
+    {
+      "id": "hallie-1",
+      "word": "HALLIE",
+      "imageUrl": "images/Hallie.png",
+      "type": "number"
+    }
+  ]
+}
