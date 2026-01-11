@@ -8,15 +8,192 @@ if (typeof AudioParam !== 'undefined' && !AudioParam.prototype.exponentialDecayT
     };
 }
 
-// ==================== WORD LIST ====================
-const WORD_LIST = [
-    { word: 'COOPER', image: 'images/Cooper.png' },
-    { word: 'THOM', image: 'images/Thom.png' },
-    { word: 'TESSA', image: 'images/Tessa.png' },
-    { word: 'BLYTHE', image: 'images/Blythe.png' },
-    { word: 'SAM', image: 'images/Sam.png' },
-    { word: 'HALLIE', image: 'images/Hallie.png' }
-];
+// ==================== CONFIG ====================
+const CONFIG = {
+    CARDS_JSON_PATH: 'data/cards.json',
+    NETLIFY_SITE_ID: '', // Set via environment or config
+    CARDS_PER_GAME: 10,  // Number of cards per game session
+    // Cards with scores above this threshold are less likely to appear
+    MASTERY_THRESHOLD: 5
+};
+
+// ==================== CARD & PROGRESS MANAGEMENT ====================
+let allCards = [];      // All cards from JSON
+let cardProgress = {};  // Progress data: { cardId: { lastSeen, score } }
+
+/**
+ * Load cards from JSON file
+ */
+async function loadCards() {
+    try {
+        const response = await fetch(CONFIG.CARDS_JSON_PATH);
+        if (!response.ok) throw new Error('Failed to load cards');
+        const data = await response.json();
+        allCards = data.cards || [];
+        console.log(`Loaded ${allCards.length} cards`);
+        return allCards;
+    } catch (error) {
+        console.error('Error loading cards:', error);
+        // Fallback to empty array
+        allCards = [];
+        return allCards;
+    }
+}
+
+/**
+ * Load progress from Netlify Blobs (with localStorage fallback)
+ */
+async function loadProgress() {
+    // Try localStorage first (works offline)
+    const localProgress = localStorage.getItem('wordSluiceProgress');
+    if (localProgress) {
+        try {
+            cardProgress = JSON.parse(localProgress);
+        } catch (e) {
+            cardProgress = {};
+        }
+    }
+
+    // Try to sync with Netlify Blobs if available
+    try {
+        const siteId = CONFIG.NETLIFY_SITE_ID || window.NETLIFY_SITE_ID;
+        if (siteId) {
+            const response = await fetch(`/.netlify/blobs/progress`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (response.ok) {
+                const remoteProgress = await response.json();
+                // Merge remote with local (remote wins for conflicts)
+                cardProgress = { ...cardProgress, ...remoteProgress };
+                // Save merged back to localStorage
+                localStorage.setItem('wordSluiceProgress', JSON.stringify(cardProgress));
+            }
+        }
+    } catch (error) {
+        console.log('Using local progress only:', error.message);
+    }
+
+    return cardProgress;
+}
+
+/**
+ * Save progress to localStorage and optionally Netlify Blobs
+ */
+async function saveProgress() {
+    // Always save to localStorage
+    localStorage.setItem('wordSluiceProgress', JSON.stringify(cardProgress));
+
+    // Try to sync with Netlify Blobs
+    try {
+        const siteId = CONFIG.NETLIFY_SITE_ID || window.NETLIFY_SITE_ID;
+        if (siteId) {
+            await fetch(`/.netlify/blobs/progress`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cardProgress)
+            });
+        }
+    } catch (error) {
+        console.log('Progress saved locally only:', error.message);
+    }
+}
+
+/**
+ * Update progress for a card after an attempt
+ */
+function updateCardProgress(cardId, correct) {
+    if (!cardProgress[cardId]) {
+        cardProgress[cardId] = { lastSeen: null, score: 0 };
+    }
+
+    cardProgress[cardId].lastSeen = new Date().toISOString();
+    cardProgress[cardId].score += correct ? 1 : -1;
+
+    // Save asynchronously
+    saveProgress();
+}
+
+/**
+ * Get progress for a card
+ */
+function getCardProgress(cardId) {
+    return cardProgress[cardId] || { lastSeen: null, score: 0 };
+}
+
+/**
+ * Select cards for a game session based on progress
+ * Cards with lower scores are prioritized
+ */
+function selectCardsForGame(count = CONFIG.CARDS_PER_GAME) {
+    if (allCards.length === 0) return [];
+
+    // Sort cards by score (lowest first = needs more practice)
+    const sortedCards = [...allCards].sort((a, b) => {
+        const scoreA = getCardProgress(a.id).score;
+        const scoreB = getCardProgress(b.id).score;
+        return scoreA - scoreB;
+    });
+
+    // Take cards that need practice, but include some variety
+    const needsPractice = sortedCards.filter(c => getCardProgress(c.id).score < CONFIG.MASTERY_THRESHOLD);
+    const mastered = sortedCards.filter(c => getCardProgress(c.id).score >= CONFIG.MASTERY_THRESHOLD);
+
+    // Prioritize cards that need practice (70%) but include some mastered (30%)
+    const practiceCount = Math.min(Math.ceil(count * 0.7), needsPractice.length);
+    const masteredCount = Math.min(count - practiceCount, mastered.length);
+
+    const selected = [
+        ...shuffleArray(needsPractice).slice(0, practiceCount),
+        ...shuffleArray(mastered).slice(0, masteredCount)
+    ];
+
+    // If we still need more cards, fill from whatever's available
+    if (selected.length < count) {
+        const remaining = allCards.filter(c => !selected.includes(c));
+        selected.push(...shuffleArray(remaining).slice(0, count - selected.length));
+    }
+
+    return shuffleArray(selected).slice(0, count);
+}
+
+/**
+ * Assign number and suit to cards for a game session
+ * Numbers: A, 2-10 for number cards; J, Q, K for face cards
+ * Suits: hearts, diamonds, clubs, spades
+ */
+function assignNumbersAndSuits(cards) {
+    const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+    const numbers = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+    const faceNumbers = ['J', 'Q', 'K'];
+
+    let suitIndex = 0;
+    let numberIndex = 0;
+    let faceIndex = 0;
+
+    return cards.map(card => {
+        let number, suit;
+
+        if (card.type === 'face') {
+            number = faceNumbers[faceIndex % faceNumbers.length];
+            faceIndex++;
+        } else {
+            number = numbers[numberIndex % numbers.length];
+            numberIndex++;
+        }
+
+        suit = suits[suitIndex % suits.length];
+        suitIndex++;
+
+        return {
+            ...card,
+            number,
+            suit
+        };
+    });
+}
+
+// Legacy WORD_LIST for backward compatibility (will be replaced by dynamic loading)
+let WORD_LIST = [];
 
 const DECOY_LETTERS = 'QWXZJKVYPB';
 
@@ -36,6 +213,162 @@ const CHIP_COLORS = [
 
 // Letter to color mapping for current game
 let letterColorMap = {};
+
+// ==================== BACKGROUND REMOVAL ====================
+let bgRemovalModule = null;
+let bgRemovalLoading = false;
+const processedImages = new Map(); // Cache processed images
+
+/**
+ * Lazily load the background removal library
+ */
+async function loadBgRemoval() {
+    if (bgRemovalModule) return bgRemovalModule;
+    if (bgRemovalLoading) {
+        // Wait for it to load
+        while (bgRemovalLoading) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+        return bgRemovalModule;
+    }
+
+    bgRemovalLoading = true;
+    try {
+        // Dynamic import from CDN
+        bgRemovalModule = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm');
+        console.log('Background removal library loaded');
+    } catch (e) {
+        console.warn('Could not load background removal library:', e);
+    }
+    bgRemovalLoading = false;
+    return bgRemovalModule;
+}
+
+/**
+ * Remove background from an image
+ * @param {string} imageSrc - Source URL of the image
+ * @returns {Promise<string>} - Blob URL of the processed image
+ */
+async function removeBackground(imageSrc) {
+    // Check cache first
+    if (processedImages.has(imageSrc)) {
+        return processedImages.get(imageSrc);
+    }
+
+    const module = await loadBgRemoval();
+    if (!module) {
+        return imageSrc; // Fallback to original if library failed to load
+    }
+
+    try {
+        const blob = await module.removeBackground(imageSrc);
+        const url = URL.createObjectURL(blob);
+        processedImages.set(imageSrc, url);
+        return url;
+    } catch (e) {
+        console.warn('Background removal failed for', imageSrc, e);
+        return imageSrc;
+    }
+}
+
+// ==================== PLAYING CARD COMPONENT ====================
+/**
+ * Creates a vintage-style playing card HTML element
+ * @param {Object} options - Card configuration options
+ * @param {string} options.number - Card number/value (e.g., "3", "A", "K", "Q", "J", "10")
+ * @param {string} options.suit - Card suit: "hearts", "diamonds", "clubs", or "spades"
+ * @param {string} options.image - Path to the portrait image
+ * @param {string} [options.size="medium"] - Size variant: "small", "medium", or "large"
+ * @param {string} [options.alt] - Alt text for the image
+ * @param {boolean} [options.removeBackground=false] - Whether to auto-remove the image background
+ * @returns {HTMLElement} The playing card DOM element
+ */
+function createPlayingCard({ number, suit, image, size = 'medium', alt = '', removeBackground: shouldRemoveBg = false }) {
+    // Suit symbols mapping
+    const suitSymbols = {
+        hearts: '\u2665',    // ♥
+        diamonds: '\u2666',  // ♦
+        clubs: '\u2663',     // ♣
+        spades: '\u2660'     // ♠
+    };
+
+    const suitSymbol = suitSymbols[suit] || suit;
+    const suitColorClass = `suit-${suit}`;
+    const sizeClass = `card-${size}`;
+
+    // Create card container
+    const card = document.createElement('div');
+    card.className = `playing-card ${sizeClass}`;
+
+    // Top-left corner (number + suit)
+    const topCorner = document.createElement('div');
+    topCorner.className = `card-corner card-corner-top ${suitColorClass}`;
+    topCorner.innerHTML = `
+        <span class="card-number">${number}</span>
+        <span class="card-suit">${suitSymbol}</span>
+    `;
+
+    // Bottom-right corner (inverted number + suit)
+    const bottomCorner = document.createElement('div');
+    bottomCorner.className = `card-corner card-corner-bottom ${suitColorClass}`;
+    bottomCorner.innerHTML = `
+        <span class="card-number">${number}</span>
+        <span class="card-suit">${suitSymbol}</span>
+    `;
+
+    // Center portrait
+    const portrait = document.createElement('div');
+    portrait.className = 'card-portrait';
+    const img = document.createElement('img');
+    img.alt = alt || `${number} of ${suit}`;
+
+    if (shouldRemoveBg) {
+        // Show loading state
+        img.style.opacity = '0.3';
+        img.src = image; // Show original first
+        portrait.appendChild(img);
+
+        // Process in background
+        removeBackground(image).then(processedUrl => {
+            img.src = processedUrl;
+            img.style.opacity = '1';
+            img.style.transition = 'opacity 0.3s ease';
+        });
+    } else {
+        img.src = image;
+        portrait.appendChild(img);
+    }
+
+    // Assemble card
+    card.appendChild(topCorner);
+    card.appendChild(portrait);
+    card.appendChild(bottomCorner);
+
+    return card;
+}
+
+/**
+ * Generates a random suit
+ * @returns {string} A random suit
+ */
+function getRandomSuit() {
+    const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+    return suits[Math.floor(Math.random() * suits.length)];
+}
+
+/**
+ * Generates a card number based on word length or other factors
+ * @param {number} value - A numeric value to convert to card number
+ * @returns {string} A card number/face value
+ */
+function getCardNumber(value) {
+    if (value === 1) return 'A';
+    if (value === 11) return 'J';
+    if (value === 12) return 'Q';
+    if (value === 13) return 'K';
+    if (value > 10) return String(value % 10 || 10);
+    return String(value);
+}
 
 // ==================== GAME STATE ====================
 let gameState = {
@@ -487,7 +820,20 @@ function setupWord() {
 
     function updateCardContent() {
         if (wordData.image) {
-            wordImage.innerHTML = `<img src="${wordData.image}" alt="${word}" class="card-image">`;
+            // Create a vintage playing card with the image
+            const cardNumber = wordData.number || getCardNumber(word.length);
+            const cardSuit = wordData.suit || getRandomSuit();
+
+            const playingCard = createPlayingCard({
+                number: cardNumber,
+                suit: cardSuit,
+                image: wordData.image,
+                size: 'large',
+                alt: word
+            });
+
+            wordImage.innerHTML = '';
+            wordImage.appendChild(playingCard);
             wordImage.style.background = 'transparent';
         } else {
             wordImage.innerHTML = `<span id="word-hint">${word}</span>`;
@@ -757,6 +1103,11 @@ function checkLetter(letter, expectedLetter, bubble) {
 function wordComplete() {
     try { playWordCompleteSound(); } catch (e) { /* ignore sound errors */ }
 
+    // Update progress: word completed successfully!
+    if (gameState.currentWord && gameState.currentWord.id) {
+        updateCardProgress(gameState.currentWord.id, true);
+    }
+
     // Show celebration
     const celebration = document.getElementById('celebration-overlay');
     celebration.classList.remove('hidden');
@@ -942,7 +1293,7 @@ function releaseWakeLock() {
 // ==================== GAME INITIALIZATION ====================
 let canvasInitialized = false;
 
-function startGame() {
+async function startGame() {
     // Hide start screen, show game screen
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
@@ -992,13 +1343,29 @@ function startGame() {
     // Clear previous word image
     document.getElementById('word-image').innerHTML = '';
 
-    // Shuffle all words for this session
-    const shuffledPool = shuffleArray([...WORD_LIST]);
-    gameState.totalWords = shuffledPool.length;
-    gameState.currentWord = shuffledPool[0];
+    // Load cards dynamically and select based on progress
+    await loadCards();
+    await loadProgress();
 
-    // Store shuffled words for this session
-    gameState.wordList = shuffledPool;
+    // Select cards for this game session based on progress
+    const selectedCards = selectCardsForGame(CONFIG.CARDS_PER_GAME);
+
+    // Assign dynamic number and suit to each card
+    const cardsWithNumberSuit = assignNumbersAndSuits(selectedCards);
+
+    // Convert to game format (compatible with existing code)
+    const gameCards = cardsWithNumberSuit.map(card => ({
+        id: card.id,
+        word: card.word,
+        image: card.imageUrl,
+        number: card.number,
+        suit: card.suit,
+        type: card.type
+    }));
+
+    gameState.totalWords = gameCards.length;
+    gameState.currentWord = gameCards[0];
+    gameState.wordList = gameCards;
 
     // Start the game
     setupWord();
