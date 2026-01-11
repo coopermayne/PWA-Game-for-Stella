@@ -192,9 +192,6 @@ function assignNumbersAndSuits(cards) {
     });
 }
 
-// Legacy WORD_LIST for backward compatibility (will be replaced by dynamic loading)
-let WORD_LIST = [];
-
 const DECOY_LETTERS = 'QWXZJKVYPB';
 
 // 10 distinct vintage chip colors
@@ -214,63 +211,6 @@ const CHIP_COLORS = [
 // Letter to color mapping for current game
 let letterColorMap = {};
 
-// ==================== BACKGROUND REMOVAL ====================
-let bgRemovalModule = null;
-let bgRemovalLoading = false;
-const processedImages = new Map(); // Cache processed images
-
-/**
- * Lazily load the background removal library
- */
-async function loadBgRemoval() {
-    if (bgRemovalModule) return bgRemovalModule;
-    if (bgRemovalLoading) {
-        // Wait for it to load
-        while (bgRemovalLoading) {
-            await new Promise(r => setTimeout(r, 100));
-        }
-        return bgRemovalModule;
-    }
-
-    bgRemovalLoading = true;
-    try {
-        // Dynamic import from CDN
-        bgRemovalModule = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm');
-        console.log('Background removal library loaded');
-    } catch (e) {
-        console.warn('Could not load background removal library:', e);
-    }
-    bgRemovalLoading = false;
-    return bgRemovalModule;
-}
-
-/**
- * Remove background from an image
- * @param {string} imageSrc - Source URL of the image
- * @returns {Promise<string>} - Blob URL of the processed image
- */
-async function removeBackground(imageSrc) {
-    // Check cache first
-    if (processedImages.has(imageSrc)) {
-        return processedImages.get(imageSrc);
-    }
-
-    const module = await loadBgRemoval();
-    if (!module) {
-        return imageSrc; // Fallback to original if library failed to load
-    }
-
-    try {
-        const blob = await module.removeBackground(imageSrc);
-        const url = URL.createObjectURL(blob);
-        processedImages.set(imageSrc, url);
-        return url;
-    } catch (e) {
-        console.warn('Background removal failed for', imageSrc, e);
-        return imageSrc;
-    }
-}
-
 // ==================== PLAYING CARD COMPONENT ====================
 /**
  * Creates a vintage-style playing card HTML element
@@ -280,10 +220,9 @@ async function removeBackground(imageSrc) {
  * @param {string} options.image - Path to the portrait image
  * @param {string} [options.size="medium"] - Size variant: "small", "medium", or "large"
  * @param {string} [options.alt] - Alt text for the image
- * @param {boolean} [options.removeBackground=false] - Whether to auto-remove the image background
  * @returns {HTMLElement} The playing card DOM element
  */
-function createPlayingCard({ number, suit, image, size = 'medium', alt = '', removeBackground: shouldRemoveBg = false }) {
+function createPlayingCard({ number, suit, image, size = 'medium', alt = '' }) {
     // Suit symbols mapping
     const suitSymbols = {
         hearts: '\u2665',    // ♥
@@ -321,23 +260,8 @@ function createPlayingCard({ number, suit, image, size = 'medium', alt = '', rem
     portrait.className = 'card-portrait';
     const img = document.createElement('img');
     img.alt = alt || `${number} of ${suit}`;
-
-    if (shouldRemoveBg) {
-        // Show loading state
-        img.style.opacity = '0.3';
-        img.src = image; // Show original first
-        portrait.appendChild(img);
-
-        // Process in background
-        removeBackground(image).then(processedUrl => {
-            img.src = processedUrl;
-            img.style.opacity = '1';
-            img.style.transition = 'opacity 0.3s ease';
-        });
-    } else {
-        img.src = image;
-        portrait.appendChild(img);
-    }
+    img.src = image;
+    portrait.appendChild(img);
 
     // Assemble card
     card.appendChild(topCorner);

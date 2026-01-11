@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playing Card Showcase</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: #1a5c38;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        #app {
+            max-width: none;
+            max-height: none;
+            box-shadow: none;
+        }
+
+        .showcase-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .showcase-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            color: #d4af37;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .suit-section {
+            margin-bottom: 40px;
+        }
+
+        .suit-label {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: #f5f0e1;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #d4af37;
+        }
+
+        .suit-label.hearts, .suit-label.diamonds {
+            border-left-color: #c41e3a;
+        }
+
+        .cards-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: flex-start;
+        }
+
+        .playing-card {
+            flex-shrink: 0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .playing-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Use small cards for the showcase */
+        .showcase-container .playing-card {
+            width: 100px;
+            height: 140px;
+        }
+
+        .showcase-container .card-number {
+            font-size: 1.1rem;
+        }
+
+        .showcase-container .card-suit {
+            font-size: 0.8rem;
+        }
+
+        .showcase-container .card-corner-top {
+            top: 5px;
+            left: 6px;
+        }
+
+        .showcase-container .card-corner-bottom {
+            bottom: 5px;
+            right: 6px;
+        }
+
+        @media (min-width: 768px) {
+            .showcase-container .playing-card {
+                width: 120px;
+                height: 168px;
+            }
+
+            .showcase-container .card-number {
+                font-size: 1.3rem;
+            }
+
+            .showcase-container .card-suit {
+                font-size: 1rem;
+            }
+
+            .showcase-container .card-corner-top {
+                top: 6px;
+                left: 8px;
+            }
+
+            .showcase-container .card-corner-bottom {
+                bottom: 6px;
+                right: 8px;
+            }
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #d4af37;
+            text-decoration: none;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="showcase-container">
+            <a href="index.html" class="back-link">&larr; Back to Game</a>
+            <h1 class="showcase-title">Vintage Playing Cards</h1>
+
+            <div id="cards-display"></div>
+        </div>
+    </div>
+
+    <script>
+        // Playing Card Component
+        function createPlayingCard({ number, suit, image, size = 'medium', alt = '' }) {
+            const suitSymbols = {
+                hearts: '\u2665',
+                diamonds: '\u2666',
+                clubs: '\u2663',
+                spades: '\u2660'
+            };
+
+            const suitSymbol = suitSymbols[suit] || suit;
+            const suitColorClass = `suit-${suit}`;
+            const sizeClass = `card-${size}`;
+
+            const card = document.createElement('div');
+            card.className = `playing-card ${sizeClass}`;
+
+            const topCorner = document.createElement('div');
+            topCorner.className = `card-corner card-corner-top ${suitColorClass}`;
+            topCorner.innerHTML = `
+                <span class="card-number">${number}</span>
+                <span class="card-suit">${suitSymbol}</span>
+            `;
+
+            const bottomCorner = document.createElement('div');
+            bottomCorner.className = `card-corner card-corner-bottom ${suitColorClass}`;
+            bottomCorner.innerHTML = `
+                <span class="card-number">${number}</span>
+                <span class="card-suit">${suitSymbol}</span>
+            `;
+
+            const portrait = document.createElement('div');
+            portrait.className = 'card-portrait';
+            const img = document.createElement('img');
+            img.alt = alt || `${number} of ${suit}`;
+            img.src = image;
+            portrait.appendChild(img);
+
+            card.appendChild(topCorner);
+            card.appendChild(portrait);
+            card.appendChild(bottomCorner);
+
+            return card;
+        }
+
+        // Load cards from JSON and display
+        async function loadAndDisplayCards() {
+            const container = document.getElementById('cards-display');
+
+            try {
+                const response = await fetch('data/cards.json');
+                const data = await response.json();
+
+                if (!data.cards || data.cards.length === 0) {
+                    container.innerHTML = '<p style="color: #f5f0e1; font-family: Cinzel, serif;">No cards yet. Upload some via the admin interface.</p>';
+                    return;
+                }
+
+                // Display all cards in a showcase
+                const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+                const numbers = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+
+                suits.forEach(suit => {
+                    const section = document.createElement('div');
+                    section.className = 'suit-section';
+
+                    const label = document.createElement('h2');
+                    label.className = `suit-label ${suit}`;
+                    label.textContent = suit.charAt(0).toUpperCase() + suit.slice(1);
+                    section.appendChild(label);
+
+                    const row = document.createElement('div');
+                    row.className = 'cards-row';
+
+                    numbers.forEach((num, idx) => {
+                        // Cycle through available cards
+                        const cardData = data.cards[idx % data.cards.length];
+                        const card = createPlayingCard({
+                            number: num,
+                            suit: suit,
+                            image: cardData.imageUrl,
+                            size: 'small',
+                            alt: `${cardData.word} - ${num} of ${suit}`
+                        });
+                        row.appendChild(card);
+                    });
+
+                    section.appendChild(row);
+                    container.appendChild(section);
+                });
+            } catch (error) {
+                console.error('Failed to load cards:', error);
+                container.innerHTML = '<p style="color: #f5f0e1; font-family: Cinzel, serif;">Error loading cards.</p>';
+            }
+        }
+
+        loadAndDisplayCards();
+    </script>
+</body>
+</html>
