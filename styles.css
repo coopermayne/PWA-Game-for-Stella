@@ -645,7 +645,7 @@ html, body {
     width: 150px;
     height: 210px;
     /* Use the actual vintage card texture */
-    background: url('Empty Card.png') center/100% 100% no-repeat;
+    background: url('images/Empty Card.png') center/100% 100% no-repeat;
     /* Subtle shadow */
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
