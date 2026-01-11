@@ -143,7 +143,27 @@
 
     <script>
         // Playing Card Component
-        function createPlayingCard({ number, suit, image, size = 'medium', alt = '' }) {
+        function createPlayingCard({ number, suit, image, size = 'medium', alt = '', type = 'number' }) {
+            const sizeClass = `card-${size}`;
+
+            const card = document.createElement('div');
+            card.className = `playing-card ${sizeClass}`;
+
+            // Face cards are full card images - display directly
+            if (type === 'face') {
+                card.style.background = 'none';
+                const img = document.createElement('img');
+                img.alt = alt || 'Face card';
+                img.src = image;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                img.style.borderRadius = '8px';
+                card.appendChild(img);
+                return card;
+            }
+
+            // Number cards use the template
             const suitSymbols = {
                 hearts: '\u2665',
                 diamonds: '\u2666',
@@ -153,10 +173,6 @@
 
             const suitSymbol = suitSymbols[suit] || suit;
             const suitColorClass = `suit-${suit}`;
-            const sizeClass = `card-${size}`;
-
-            const card = document.createElement('div');
-            card.className = `playing-card ${sizeClass}`;
 
             const topCorner = document.createElement('div');
             topCorner.className = `card-corner card-corner-top ${suitColorClass}`;
@@ -223,7 +239,8 @@
                             suit: suit,
                             image: cardData.imageUrl,
                             size: 'small',
-                            alt: `${cardData.word} - ${num} of ${suit}`
+                            alt: `${cardData.word} - ${num} of ${suit}`,
+                            type: cardData.type || 'number'
                         });
                         row.appendChild(card);
                     });

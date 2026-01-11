@@ -222,8 +222,28 @@ let letterColorMap = {};
  * @param {string} [options.alt] - Alt text for the image
  * @returns {HTMLElement} The playing card DOM element
  */
-function createPlayingCard({ number, suit, image, size = 'medium', alt = '' }) {
-    // Suit symbols mapping
+function createPlayingCard({ number, suit, image, size = 'medium', alt = '', type = 'number' }) {
+    const sizeClass = `card-${size}`;
+
+    // Create card container
+    const card = document.createElement('div');
+    card.className = `playing-card ${sizeClass}`;
+
+    // Face cards are full card images - just display the image directly
+    if (type === 'face') {
+        card.style.background = 'none';
+        const img = document.createElement('img');
+        img.alt = alt || 'Face card';
+        img.src = image;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        img.style.borderRadius = '8px';
+        card.appendChild(img);
+        return card;
+    }
+
+    // Number cards use the template with corners and portrait
     const suitSymbols = {
         hearts: '\u2665',    // ♥
         diamonds: '\u2666',  // ♦
@@ -233,11 +253,6 @@ function createPlayingCard({ number, suit, image, size = 'medium', alt = '' }) {
 
     const suitSymbol = suitSymbols[suit] || suit;
     const suitColorClass = `suit-${suit}`;
-    const sizeClass = `card-${size}`;
-
-    // Create card container
-    const card = document.createElement('div');
-    card.className = `playing-card ${sizeClass}`;
 
     // Top-left corner (number + suit)
     const topCorner = document.createElement('div');
@@ -753,7 +768,8 @@ function setupWord() {
                 suit: cardSuit,
                 image: wordData.image,
                 size: 'large',
-                alt: word
+                alt: word,
+                type: wordData.type || 'number'
             });
 
             wordImage.innerHTML = '';
