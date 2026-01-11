@@ -12,6 +12,9 @@ if (typeof AudioParam !== 'undefined' && !AudioParam.prototype.exponentialDecayT
 const WORD_LIST = [
     { word: 'COOPER', image: 'images/Cooper.png' },
     { word: 'THOM', image: 'images/Thom.png' },
+    { word: 'TESSA', image: 'images/Tessa.png' },
+    { word: 'BLYTHE', image: 'images/Blythe.png' },
+    { word: 'SAM', image: 'images/Sam.png' },
     { word: 'HALLIE', image: 'images/Hallie.png' }
 ];
 
