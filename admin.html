@@ -6,6 +6,8 @@
     <title>Card Admin - Word Sluice</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -13,8 +15,8 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a2e;
+            font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             color: #eee;
             min-height: 100vh;
             padding: 20px;
@@ -29,13 +31,25 @@
             text-align: center;
             margin-bottom: 30px;
             color: #d4af37;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }
+
+        h1::before {
+            content: '🎴 ';
+        }
+
+        h1::after {
+            content: ' 🎴';
         }
 
         h2 {
             color: #d4af37;
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #333;
+            border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+            font-weight: 500;
         }
 
         .sections {
@@ -52,10 +66,11 @@
         }
 
         .section {
-            background: #16213e;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #333;
+            background: linear-gradient(145deg, #1a2744 0%, #16213e 100%);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .form-group {
@@ -86,43 +101,53 @@
         button {
             padding: 12px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: 10px;
             font-size: 16px;
+            font-family: 'Fredoka', sans-serif;
             cursor: pointer;
             transition: all 0.2s;
+            font-weight: 500;
         }
 
         .btn-primary {
-            background: #d4af37;
+            background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
             color: #1a1a2e;
-            font-weight: bold;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
 
         .btn-primary:hover {
-            background: #f4d03f;
+            background: linear-gradient(135deg, #f4d03f 0%, #d4af37 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
         }
 
         .btn-primary:disabled {
-            background: #666;
+            background: #444;
+            box-shadow: none;
             cursor: not-allowed;
+            transform: none;
         }
 
         .btn-secondary {
-            background: #333;
+            background: linear-gradient(135deg, #3a3a5c 0%, #2a2a4c 100%);
             color: #eee;
+            border: 1px solid #555;
         }
 
         .btn-secondary:hover {
-            background: #444;
+            background: linear-gradient(135deg, #4a4a6c 0%, #3a3a5c 100%);
+            transform: translateY(-2px);
         }
 
         .btn-danger {
-            background: #c0392b;
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
             color: #fff;
         }
 
         .btn-danger:hover {
-            background: #e74c3c;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            transform: translateY(-2px);
         }
 
         /* Cropper section */
@@ -200,72 +225,92 @@
 
         /* Cards list */
         .cards-section {
-            background: #16213e;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #333;
+            background: linear-gradient(145deg, #1a2744 0%, #16213e 100%);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
         }
 
         .card-item {
-            background: #0f0f23;
-            padding: 10px;
-            border-radius: 8px;
+            background: linear-gradient(145deg, #1e2a4a 0%, #141e36 100%);
+            padding: 15px;
+            border-radius: 12px;
             text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
         .card-item img {
             width: 100%;
-            height: 120px;
+            height: 130px;
             object-fit: contain;
-            border-radius: 6px;
-            background: #f5f0e1;
-            margin-bottom: 8px;
+            border-radius: 8px;
+            background: linear-gradient(145deg, #f5f0e1 0%, #e8e0d0 100%);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .card-item .word {
-            font-weight: bold;
+            font-weight: 600;
             color: #d4af37;
             margin-bottom: 5px;
+            font-size: 1.1rem;
         }
 
         .card-item .type {
             font-size: 12px;
             color: #888;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .card-item button {
-            padding: 5px 10px;
+            padding: 6px 14px;
             font-size: 12px;
         }
 
         /* Tabs */
         .tabs {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 20px;
         }
 
         .tab {
             padding: 10px 20px;
-            background: #333;
-            border: none;
-            border-radius: 6px 6px 0 0;
-            color: #aaa;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #888;
             cursor: pointer;
             font-size: 14px;
+            font-family: 'Fredoka', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: rgba(255,255,255,0.1);
+            color: #ccc;
         }
 
         .tab.active {
-            background: #16213e;
+            background: rgba(212, 175, 55, 0.2);
             color: #d4af37;
+            border-color: rgba(212, 175, 55, 0.4);
         }
 
         .hidden {
@@ -283,6 +328,68 @@
             color: #888;
             margin-top: 10px;
         }
+
+        /* Dropzone styles */
+        .dropzone {
+            border: 2px dashed rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(145deg, rgba(15,15,35,0.8) 0%, rgba(20,20,50,0.8) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dropzone::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'/%3E%3C/svg%3E") center/contain no-repeat;
+            opacity: 0.3;
+            z-index: 0;
+            transition: all 0.3s;
+        }
+
+        .dropzone:hover {
+            border-color: #d4af37;
+            background: linear-gradient(145deg, rgba(25,25,55,0.9) 0%, rgba(30,30,70,0.9) 100%);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+        }
+
+        .dropzone:hover::before {
+            opacity: 0.5;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .dropzone.drag-over {
+            border-color: #d4af37;
+            background: linear-gradient(145deg, rgba(40,40,80,0.9) 0%, rgba(50,50,100,0.9) 100%);
+            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
+        }
+
+        .dropzone-text {
+            color: #888;
+            font-size: 15px;
+            position: relative;
+            z-index: 1;
+            margin-top: 40px;
+        }
+
+        .dropzone-text strong {
+            color: #d4af37;
+            font-size: 16px;
+        }
+
+        .dropzone input[type="file"] {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -298,8 +405,13 @@
                 <div id="number-status" class="status"></div>
 
                 <div class="form-group">
-                    <label>1. Select Image</label>
-                    <input type="file" id="number-image" accept="image/*">
+                    <label>1. Drop or Select Image</label>
+                    <div id="number-dropzone" class="dropzone">
+                        <input type="file" id="number-image" accept="image/*">
+                        <div class="dropzone-text">
+                            <strong>Drop image here</strong><br>or click to browse
+                        </div>
+                    </div>
                 </div>
 
                 <div id="cropper-wrapper" class="cropper-container-wrapper hidden">
@@ -333,8 +445,13 @@
                 <div id="face-status" class="status"></div>
 
                 <div class="form-group">
-                    <label>1. Select Image</label>
-                    <input type="file" id="face-image" accept="image/*">
+                    <label>1. Drop or Select Image</label>
+                    <div id="face-dropzone" class="dropzone">
+                        <input type="file" id="face-image" accept="image/*">
+                        <div class="dropzone-text">
+                            <strong>Drop image here</strong><br>or click to browse
+                        </div>
+                    </div>
                 </div>
 
                 <div id="face-preview-wrapper" class="hidden" style="margin-bottom: 15px;">
@@ -375,6 +492,46 @@
         let currentFilter = 'all';
         let tempFilename = null;
 
+        // Dropzone setup helper
+        function setupDropzone(dropzoneId, inputId, onFileSelected) {
+            const dropzone = document.getElementById(dropzoneId);
+            const input = document.getElementById(inputId);
+
+            // Click to browse
+            dropzone.addEventListener('click', () => input.click());
+
+            // Drag events
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('drag-over');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('drag-over');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('image/')) {
+                    // Create a new FileList-like object for the input
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(files[0]);
+                    input.files = dataTransfer.files;
+                    // Trigger change event
+                    input.dispatchEvent(new Event('change'));
+                }
+            });
+
+            // File input change
+            input.addEventListener('change', () => {
+                if (input.files.length > 0) {
+                    onFileSelected(input.files[0]);
+                }
+            });
+        }
+
         // DOM Elements
         const numberImage = document.getElementById('number-image');
         const cropperWrapper = document.getElementById('cropper-wrapper');
@@ -408,12 +565,8 @@
             element.className = 'status';
         }
 
-        // Number Card: Image selection
-        numberImage.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // Upload temp file
+        // Number Card: Dropzone setup
+        async function handleNumberImageSelected(file) {
             const formData = new FormData();
             formData.append('image', file);
 
@@ -464,7 +617,9 @@
             } catch (error) {
                 showStatus(numberStatus, error.message, 'error');
             }
-        });
+        }
+
+        setupDropzone('number-dropzone', 'number-image', handleNumberImageSelected);
 
         // Number Card: Process
         processNumberBtn.addEventListener('click', async () => {
@@ -567,11 +722,8 @@
             tempFilename = null;
         }
 
-        // Face Card: Image selection
-        faceImage.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
+        // Face Card: Dropzone setup
+        function handleFaceImageSelected(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 facePreviewImg.src = e.target.result;
@@ -579,7 +731,9 @@
                 updateFaceButton();
             };
             reader.readAsDataURL(file);
-        });
+        }
+
+        setupDropzone('face-dropzone', 'face-image', handleFaceImageSelected);
 
         faceWord.addEventListener('input', updateFaceButton);
 

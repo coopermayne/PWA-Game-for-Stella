@@ -93,11 +93,6 @@ def generate_card_id(word, card_type):
 # Routes
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
-
-
-@app.route('/admin')
-def admin():
     return send_from_directory('.', 'admin.html')
 
 
@@ -308,5 +303,5 @@ def delete_card(card_id):
 
 if __name__ == '__main__':
     print("Starting admin server...")
-    print("Open http://localhost:5000/admin")
+    print("Open http://localhost:5000")
     app.run(host='0.0.0.0', port=5000, debug=True)

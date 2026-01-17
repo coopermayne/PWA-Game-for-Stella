@@ -23,6 +23,30 @@
       "word": "BIRD",
       "imageUrl": "https://imagedelivery.net/3oZsG34qPq3SIXQhl47vqA/24e9629d-da03-41d4-0e69-d66fdf17bf00/medium",
       "type": "number"
+    },
+    {
+      "id": "face-sam-968fd3df",
+      "word": "SAM",
+      "imageUrl": "https://imagedelivery.net/3oZsG34qPq3SIXQhl47vqA/e74ad04e-7e54-4dbf-8941-c06ae3fbf300/medium",
+      "type": "face"
+    },
+    {
+      "id": "face-hallie-186ea2b2",
+      "word": "HALLIE",
+      "imageUrl": "https://imagedelivery.net/3oZsG34qPq3SIXQhl47vqA/ef4486ac-f115-4e24-b245-626f0bfe7100/medium",
+      "type": "face"
+    },
+    {
+      "id": "face-cooper-57d9dc7c",
+      "word": "COOPER",
+      "imageUrl": "https://imagedelivery.net/3oZsG34qPq3SIXQhl47vqA/9feefc8f-6599-4236-77b1-c46746060200/medium",
+      "type": "face"
+    },
+    {
+      "id": "face-blythe-64786b80",
+      "word": "BLYTHE",
+      "imageUrl": "https://imagedelivery.net/3oZsG34qPq3SIXQhl47vqA/d2fc6ed2-8f24-4725-3fe0-c633c5cfbc00/medium",
+      "type": "face"
     }
   ]
 }
