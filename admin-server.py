@@ -75,11 +75,12 @@ def upload_to_cloudflare(image_bytes, filename):
     if not result.get("success"):
         raise Exception(f"Cloudflare upload failed: {result.get('errors')}")
 
-    # Return the delivery URL
+    # Return the delivery URL with medium variant (good for cards - ~500px)
     image_id = result["result"]["id"]
-    variants = result["result"]["variants"]
+    delivery_hash = os.environ.get("CLOUDFLARE_DELIVERY_HASH", "3oZsG34qPq3SIXQhl47vqA")
 
-    return variants[0] if variants else f"https://imagedelivery.net/{account_id}/{image_id}/public"
+    # Use 'medium' variant for optimal card size (retina-friendly but not excessive)
+    return f"https://imagedelivery.net/{delivery_hash}/{image_id}/medium"
 
 
 def generate_card_id(word, card_type):
