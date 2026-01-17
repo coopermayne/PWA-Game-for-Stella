@@ -1,0 +1,7 @@
+# Admin tools - local development only
+admin.html
+admin-server.py
+requirements-admin.txt
+uploads/
+processed/
+scripts/
